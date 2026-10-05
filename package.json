@@ -1,0 +1,11 @@
+{
+  "name": "cote-azur-vivante",
+  "private": true,
+  "description": "Carte interactive des spectacles et événements dans les Alpes-Maritimes.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

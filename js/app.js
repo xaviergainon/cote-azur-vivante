@@ -372,7 +372,9 @@
   function initMap() {
     const key = window.MAPS_CONFIG?.googleMapsApiKey;
     if (!key || key === "YOUR_GOOGLE_MAPS_API_KEY") {
-      showMapError("Clé Google Maps manquante — crée js/config.js à partir de config.example.js");
+      showMapError(
+        "Clé Google Maps manquante — en local, crée js/config.js ; sur Railway, définis GOOGLE_MAPS_API_KEY."
+      );
       return;
     }
 

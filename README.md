@@ -8,14 +8,27 @@ Ouvre `index.html` (ou un petit serveur local), glisse, zoome, choisis un jour :
 
 1. Copie `js/config.example.js` vers `js/config.js`.
 2. Colle ta clé **Maps JavaScript API** (Google Cloud Console).
-3. Restreins la clé aux référents HTTP (`http://localhost:*`, ton domaine GitHub Pages).
-4. Ouvre le fichier, ou (recommandé, Google Maps refuse souvent `file://`) :
+3. Restreins la clé aux référents HTTP (`http://localhost:*` et le domaine Railway).
+4. Démarre le serveur :
 
 ```bash
-npx --yes serve .
+npm start
 ```
 
-Puis va sur l’URL affichée (souvent `http://localhost:3000`).
+Puis ouvre `http://localhost:3000`.
+
+Si `GOOGLE_MAPS_API_KEY` est définie dans l’environnement, elle remplace `js/config.js`.
+
+## Déployer sur Railway
+
+Le dépôt est une app Node : Railway la détecte et lance `npm start` sur le port `PORT`.
+
+1. Sur [Railway](https://railway.com/), **New Project → Deploy from GitHub repo** et choisis `xaviergainon/cote-azur-vivante`.
+2. Dans les variables du service, ajoute `GOOGLE_MAPS_API_KEY` (ta clé Maps JavaScript API). `GOOGLE_MAPS_MAP_ID` est optionnel.
+3. **Settings → Networking → Generate Domain**.
+4. Dans Google Cloud, restreins la clé aux référents `https://<ton-domaine>.up.railway.app/*` et `http://localhost:*`.
+
+La clé n’est pas dans Git. Le serveur l’injecte dans `/js/config.js` au moment de la requête.
 
 ## Données
 
