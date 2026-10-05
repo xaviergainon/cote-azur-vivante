@@ -5,7 +5,8 @@ Choix faits pour l’agent interne, sans les redemander.
 ## Déclenchement
 
 - Une collecte par jour, à **06:15 heure de Paris**.
-- L’horaire tourne dans le processus web. Au démarrage, s’il est déjà passé et qu’aucune collecte quotidienne n’a eu lieu ce jour-là, elle part tout de suite. Un redémarrage plus tard dans la journée ne la relance pas.
+- L’horaire tourne dans le processus web. Au démarrage, s’il est déjà passé et qu’aucune collecte quotidienne n’a abouti ce jour-là, elle part tout de suite. Une collecte déjà réussie n’est pas relancée. Une collecte en erreur est retentée, trois fois au plus dans la journée.
+- Gemini 3 répond avec un budget de réflexion. L’agent demande le niveau `low`, ignore les parties « thought », et ne fixe pas `temperature` : sur ces modèles une température basse coupe la réponse.
 - L’admin peut changer l’heure, couper l’automatisme, ou lancer une collecte tout de suite. Les sources et les recherches se règlent dans `/admin`.
 
 ## Ce que l’agent lit
