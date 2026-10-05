@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Côte d'Azur Vivante — Agenda carte Alpes-Maritimes</title>
     <meta
       name="description"
@@ -32,7 +32,11 @@
 
     <aside class="panel" aria-label="Programme par jour">
       <div class="panel-head">
-        <h1>Parcours du soir</h1>
+        <div class="panel-title-row">
+          <h1>Parcours du soir</h1>
+          <a class="sheet-admin" href="/admin">Admin</a>
+          <button type="button" class="sheet-toggle" id="sheetToggle" aria-pressed="false">Carte</button>
+        </div>
         <p>
           Zoome, déplace-toi, choisis un jour — chaque point mène à une salle, un festival ou une
           conférence du 06.
@@ -48,7 +52,7 @@
           class="search"
           id="search"
           type="search"
-          placeholder="Rechercher un lieu, un artiste…"
+          placeholder="Lieu ou artiste"
           autocomplete="off"
         />
         <button type="button" class="toggle" id="freeToggle" aria-pressed="false">Gratuit</button>

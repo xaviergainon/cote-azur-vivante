@@ -339,6 +339,20 @@
       els.recenterBtn.addEventListener("click", () => fitToEvents(filtered()));
     }
 
+    const sheetToggle = document.getElementById("sheetToggle");
+    if (sheetToggle) {
+      sheetToggle.addEventListener("click", () => {
+        const mapFocus = document.body.classList.toggle("map-focus");
+        sheetToggle.textContent = mapFocus ? "Liste" : "Carte";
+        sheetToggle.setAttribute("aria-pressed", String(mapFocus));
+        requestAnimationFrame(() => {
+          if (!state.map) return;
+          google.maps.event.trigger(state.map, "resize");
+          fitToEvents(filtered());
+        });
+      });
+    }
+
     els.filters.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-cat]");
       if (!btn) return;
@@ -424,7 +438,28 @@
         clickableIcons: false,
       });
 
-      state.infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
+      const narrow = window.matchMedia("(max-width: 860px)");
+      const placeControls = () => {
+        const position = narrow.matches
+          ? google.maps.ControlPosition.RIGHT_CENTER
+          : google.maps.ControlPosition.LEFT_BOTTOM;
+        state.map.setOptions({
+          zoomControlOptions: { position },
+          fullscreenControlOptions: { position },
+        });
+      };
+      placeControls();
+      narrow.addEventListener("change", () => {
+        placeControls();
+        google.maps.event.trigger(state.map, "resize");
+      });
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => google.maps.event.trigger(state.map, "resize")).observe(
+          document.getElementById("map")
+        );
+      }
+
+      state.infoWindow = new google.maps.InfoWindow({ maxWidth: 280 });
       state.map.addListener("click", () => {
         if (state.infoWindow) state.infoWindow.close();
         state.selectedId = null;

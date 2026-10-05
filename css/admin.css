@@ -156,8 +156,25 @@ textarea { min-height: 90px; resize: vertical; }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
-  .side { border-right: 0; border-bottom: 1px solid var(--line); }
-  .nav { flex-direction: row; flex-wrap: wrap; }
-  .side .ghost { margin-top: 0; }
+  .side {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+    gap: 12px;
+  }
+  .nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .nav button { flex: 0 0 auto; min-height: 44px; }
+  .side .ghost { margin-top: 0; min-height: 44px; }
+  .main { padding: 16px; }
   .grid { grid-template-columns: 1fr; }
+  input, select, textarea, button { font-size: 16px; }
+  .event { grid-template-columns: minmax(0, 1fr) auto; }
+  .event strong, .item strong { overflow-wrap: anywhere; }
+  .log { font-size: 0.78rem; max-height: 42vh; }
+  h1 { font-size: 1.55rem; }
 }

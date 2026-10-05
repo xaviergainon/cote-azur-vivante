@@ -169,6 +169,24 @@ body {
 .panel-head {
   padding: 22px 22px 14px;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title-row h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.sheet-toggle,
+.sheet-admin {
+  display: none;
 }
 
 .panel-head h1 {
@@ -194,6 +212,7 @@ body {
   overflow-x: auto;
   border-bottom: 1px solid var(--line);
   scrollbar-width: thin;
+  flex-shrink: 0;
 }
 
 .day-btn {
@@ -246,6 +265,7 @@ body {
   padding: 10px 16px 4px;
   overflow-x: auto;
   scrollbar-width: thin;
+  flex-shrink: 0;
 }
 
 .city-chip {
@@ -296,6 +316,7 @@ body {
   gap: 6px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .chip {
@@ -328,6 +349,7 @@ body {
   gap: 8px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .search {
@@ -367,6 +389,7 @@ body {
   padding: 10px 18px 0;
   font-size: 0.78rem;
   color: rgba(232, 244, 242, 0.65);
+  flex-shrink: 0;
 }
 
 .stats strong {
@@ -376,9 +399,11 @@ body {
 
 .list {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 12px 14px 18px;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 
 .card {
@@ -475,6 +500,7 @@ body {
   font-size: 0.68rem;
   color: rgba(232, 244, 242, 0.55);
   line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .panel-foot a {
@@ -654,10 +680,27 @@ body {
 }
 
 @media (max-width: 860px) {
+  :root {
+    --sheet: 68dvh;
+  }
+
+  body.map-focus {
+    --sheet: 132px;
+  }
+
+  #map {
+    bottom: var(--sheet);
+  }
+
   .brand-bar {
-    top: 10px;
+    top: max(10px, env(safe-area-inset-top));
     left: 10px;
+    max-width: calc(100vw - 20px);
     padding: 8px 12px 8px 8px;
+  }
+
+  .brand-text strong {
+    font-size: 1rem;
   }
 
   .brand-text span {
@@ -666,21 +709,110 @@ body {
 
   .panel {
     top: auto;
-    right: 10px;
-    left: 10px;
-    bottom: 10px;
+    right: 0;
+    left: 0;
+    bottom: 0;
     width: auto;
-    height: min(48vh, 420px);
-    border-radius: 18px;
+    height: var(--sheet);
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .hint,
-  .map-tools {
-    display: none;
+  .panel-head {
+    padding: 14px 16px 10px;
   }
 
   .panel-head h1 {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+  }
+
+  .panel-head p,
+  .panel-foot,
+  .hint {
+    display: none;
+  }
+
+  .sheet-toggle,
+  .sheet-admin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--foam);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0 12px;
+    flex: 0 0 auto;
+  }
+
+  .sheet-toggle {
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--ink);
+    background: linear-gradient(135deg, var(--teal), #7ee8dc);
+    border-color: transparent;
+  }
+
+  .day-rail,
+  .city-rail,
+  .filters {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .day-btn,
+  .city-chip,
+  .chip,
+  .toggle,
+  .search {
+    min-height: 44px;
+  }
+
+  .search,
+  .toggle {
+    font-size: 16px;
+  }
+
+  .chip,
+  .city-chip {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .map-tools {
+    display: block;
+    left: 12px;
+    right: auto;
+    top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+    bottom: auto;
+  }
+
+  .gmap-popup {
+    max-width: min(260px, calc(100vw - 48px));
+  }
+
+  .splash-inner {
+    padding: 24px 20px;
+  }
+
+  body.map-focus .city-rail,
+  body.map-focus .filters,
+  body.map-focus .toolbar,
+  body.map-focus .stats,
+  body.map-focus .list {
+    display: none;
   }
 }
 
