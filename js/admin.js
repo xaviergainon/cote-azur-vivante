@@ -21,6 +21,7 @@ const state = {
   events: [],
   filter: "draft",
   runs: [],
+  schedule: null,
   busy: false,
   selected: null,
   message: "",
@@ -84,6 +85,7 @@ async function refreshRuns() {
   const data = await api("/api/admin/runs");
   state.runs = data.runs;
   state.busy = data.busy;
+  state.schedule = await api("/api/admin/schedule");
   if (!data.busy) stopPoll();
   if (state.view === "agent") render();
 }
@@ -195,16 +197,33 @@ function sourcesView() {
 
 function agentView() {
   const run = state.runs[0];
+  const schedule = state.schedule || { enabled: true, time: "06:15", queries: [], nextRun: "" };
+  const when = schedule.nextRun
+    ? new Date(schedule.nextRun).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })
+    : "";
+  const kind = run?.trigger_name === "schedule" ? "quotidien" : "manuel";
   return `
     <section class="panel stack" style="padding:18px">
-      <h2>Collecte</h2>
-      <p class="hint">L’agent ouvre chaque source activée, demande à Gemini d’en extraire les sorties des Alpes-Maritimes, puis les enregistre en brouillon. Rien n’est publié sans toi.</p>
-      <div class="row">
-        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer la collecte"}</button>
-        <a href="#events" id="goDrafts">Voir les brouillons</a>
-      </div>
-      <p class="error">${esc(state.error)}</p>
-      <p class="hint">${run ? `${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
+      <h2>Agent quotidien</h2>
+      <p class="hint">Chaque jour, à l’heure de Paris, l’agent interroge Google via Gemini puis lit les sources activées. Les événements des 30 prochains jours arrivent en brouillon. Rien n’est publié sans toi.</p>
+      <form id="scheduleForm" class="stack">
+        <label class="check"><input type="checkbox" name="enabled" ${schedule.enabled ? "checked" : ""}> Collecte automatique</label>
+        <div class="grid">
+          <label>Heure (Paris)<input name="time" type="time" value="${esc(schedule.time)}" required></label>
+        </div>
+        <label>Recherches Google, une par ligne
+          <textarea name="queries">${esc((schedule.queries || []).join("\n"))}</textarea>
+        </label>
+        <p class="hint">Prochaine collecte : ${esc(when)}</p>
+        <p class="error">${esc(state.error)}</p>
+        <p class="hint">${esc(state.message)}</p>
+        <div class="row">
+          <button class="primary" type="submit">Enregistrer le planning</button>
+          <button class="ghost" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
+          <a href="#events" id="goDrafts">Voir les brouillons</a>
+        </div>
+      </form>
+      <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
 }
@@ -436,6 +455,22 @@ function bindApp() {
       await refreshSources();
       render();
     });
+  });
+
+  document.getElementById("scheduleForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.error = "";
+    state.message = "";
+    const form = event.currentTarget;
+    const body = formBody(form);
+    body.enabled = form.elements.enabled.checked;
+    try {
+      state.schedule = await api("/api/admin/schedule", { method: "PUT", body: JSON.stringify(body) });
+      state.message = "Planning enregistré.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
   });
 
   document.getElementById("startRun")?.addEventListener("click", async () => {

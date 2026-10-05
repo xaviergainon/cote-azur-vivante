@@ -4,6 +4,7 @@ const { initDb, ROOT } = require("./lib/db");
 const { bootstrap } = require("./lib/seed");
 const { mapsKey } = require("./lib/settings");
 const { mountRoutes } = require("./lib/routes");
+const { startScheduler } = require("./lib/schedule");
 
 function mapsConfigScript(key) {
   return `window.MAPS_CONFIG = ${JSON.stringify({
@@ -77,6 +78,7 @@ async function main() {
   const server = app.listen(port, "0.0.0.0", () => {
     const where = ctx.db.kind === "postgres" ? "Postgres" : "base locale (.data)";
     console.log(`Côte d'Azur Vivante sur 0.0.0.0:${port} — ${where}`);
+    startScheduler(ctx);
   });
 
   async function shutdown() {
