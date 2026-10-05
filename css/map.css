@@ -465,6 +465,10 @@ body {
   color: var(--teal);
 }
 
+.admin-link {
+  color: var(--gold);
+}
+
 .panel-foot {
   padding: 10px 16px 14px;
   border-top: 1px solid var(--line);

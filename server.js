@@ -1,121 +1,94 @@
-const fs = require("node:fs");
-const http = require("node:http");
 const path = require("node:path");
+const express = require("express");
+const { initDb, ROOT } = require("./lib/db");
+const { bootstrap } = require("./lib/seed");
+const { mapsKey } = require("./lib/settings");
+const { mountRoutes } = require("./lib/routes");
 
-const PORT = Number(process.env.PORT) || 3000;
-const HOST = "0.0.0.0";
-const ROOT = path.resolve(__dirname);
-
-const MIME = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".ico": "image/x-icon",
-  ".woff2": "font/woff2",
-};
-
-function mapsConfigSource() {
-  const key = process.env.GOOGLE_MAPS_API_KEY || "";
-  const mapId = process.env.GOOGLE_MAPS_MAP_ID || null;
+function mapsConfigScript(key) {
   return `window.MAPS_CONFIG = ${JSON.stringify({
-    googleMapsApiKey: key,
-    mapId,
+    googleMapsApiKey: key || "",
+    mapId: null,
   })};\n`;
 }
 
-function resolvePublicFile(pathname) {
-  let rel;
-  try {
-    rel = decodeURIComponent(pathname);
-  } catch {
-    return null;
-  }
-  if (rel.includes("\0")) return null;
-  if (rel === "/") rel = "/index.html";
+async function main() {
+  const ctx = await initDb();
+  await bootstrap(ctx.db, ctx.secret);
 
-  const file = path.resolve(ROOT, `.${rel}`);
-  const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
-  if (file !== ROOT && !file.startsWith(rootWithSep)) return null;
-  if (path.basename(file).startsWith(".")) return null;
-  return file;
-}
-
-function send(res, status, body, headers, method) {
-  res.writeHead(status, headers);
-  if (method === "HEAD") res.end();
-  else res.end(body);
-}
-
-const server = http.createServer((req, res) => {
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    send(res, 405, "Method Not Allowed", { "Content-Type": "text/plain; charset=utf-8" }, req.method);
-    return;
-  }
-
-  const url = new URL(req.url || "/", "http://localhost");
-
-  if (url.pathname === "/health") {
-    send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }, req.method);
-    return;
-  }
-
-  if (url.pathname === "/js/config.js") {
-    const localConfig = path.join(ROOT, "js", "config.js");
-    const useEnv = Boolean(process.env.GOOGLE_MAPS_API_KEY);
-    if (!useEnv && fs.existsSync(localConfig)) {
-      fs.readFile(localConfig, (err, data) => {
-        if (err) {
-          send(res, 500, "config unreadable", { "Content-Type": "text/plain; charset=utf-8" }, req.method);
-          return;
-        }
-        send(
-          res,
-          200,
-          data,
-          { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" },
-          req.method
-        );
-      });
-      return;
-    }
-
-    send(
-      res,
-      200,
-      mapsConfigSource(),
-      { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "no-store" },
-      req.method
-    );
-    return;
-  }
-
-  const file = resolvePublicFile(url.pathname);
-  if (!file) {
-    send(res, 404, "Not found", { "Content-Type": "text/plain; charset=utf-8" }, req.method);
-    return;
-  }
-
-  fs.stat(file, (err, stat) => {
-    if (err || !stat.isFile()) {
-      send(res, 404, "Not found", { "Content-Type": "text/plain; charset=utf-8" }, req.method);
-      return;
-    }
-    const type = MIME[path.extname(file).toLowerCase()] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": type, "Cache-Control": "public, max-age=300" });
-    if (req.method === "HEAD") {
-      res.end();
-      return;
-    }
-    fs.createReadStream(file).pipe(res);
+  const app = express();
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+  app.use(express.json({ limit: "256kb" }));
+  app.use("/api", (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
   });
-});
+  mountRoutes(app, ctx);
 
-server.listen(PORT, HOST, () => {
-  console.log(`Côte d'Azur Vivante listening on ${HOST}:${PORT}`);
+  app.get("/health", (req, res) => {
+    res.type("text/plain").send("ok");
+  });
+
+  app.get("/js/config.js", async (req, res, next) => {
+    try {
+      const key = await mapsKey(ctx.db, ctx.secret);
+      res.set("Cache-Control", "no-store");
+      res.type("application/javascript").send(mapsConfigScript(key));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get(["/admin", "/admin/"], (req, res) => {
+    res.sendFile(path.join(ROOT, "admin", "index.html"));
+  });
+
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(ROOT, "index.html"));
+  });
+
+  app.use("/css", express.static(path.join(ROOT, "css"), { maxAge: "5m" }));
+  app.use("/js", express.static(path.join(ROOT, "js"), { maxAge: "5m" }));
+
+  app.use((req, res) => {
+    if (req.path.startsWith("/api")) {
+      res.status(404).json({ error: "Introuvable." });
+      return;
+    }
+    res.status(404).type("text/plain").send("Introuvable");
+  });
+
+  app.use((error, req, res, next) => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+    console.error(error);
+    const message = error.name === "TimeoutError" ? "Délai dépassé." : "Erreur interne.";
+    if (req.path.startsWith("/api") || req.path === "/js/config.js") {
+      res.status(500).json({ error: message });
+      return;
+    }
+    res.status(500).type("text/plain").send(message);
+  });
+
+  const port = Number(process.env.PORT) || 3000;
+  const server = app.listen(port, "0.0.0.0", () => {
+    const where = ctx.db.kind === "postgres" ? "Postgres" : "base locale (.data)";
+    console.log(`Côte d'Azur Vivante sur 0.0.0.0:${port} — ${where}`);
+  });
+
+  async function shutdown() {
+    server.close();
+    await ctx.db.close();
+    process.exit(0);
+  }
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });

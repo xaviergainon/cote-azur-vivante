@@ -1,5 +1,18 @@
-(function () {
-  const data = window.AGENDA_06;
+(async function () {
+  let data;
+  try {
+    const response = await fetch("/api/agenda");
+    if (!response.ok) throw new Error("agenda");
+    data = await response.json();
+  } catch (error) {
+    const box = document.getElementById("mapError");
+    if (box) {
+      box.hidden = false;
+      box.textContent = "Impossible de charger l’agenda.";
+    }
+    return;
+  }
+
   function dayLabel(iso) {
     const d = new Date(iso + "T12:00:00");
     const dow = d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
@@ -33,7 +46,7 @@
   ];
 
   const state = {
-    day: data.meta.days.includes(todayIso()) ? todayIso() : data.meta.days[0],
+    day: data.meta.days.includes(todayIso()) ? todayIso() : data.meta.days[0] || todayIso(),
     categories: new Set(Object.keys(data.categories)),
     city: "all",
     freeOnly: false,
@@ -88,7 +101,7 @@
   }
 
   function escapeHtml(str) {
-    return String(str)
+    return String(str ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -103,7 +116,7 @@
         <p class="popup-meta">${escapeHtml(meta.label)} · ${escapeHtml(event.time)} · ${escapeHtml(event.city)}<br>${escapeHtml(event.venue)}</p>
         <p class="popup-desc">${escapeHtml(event.description)}</p>
         <p class="popup-meta">${escapeHtml(event.price)} · ${escapeHtml(event.source)}</p>
-        <a class="popup-link" href="${event.url}" target="_blank" rel="noopener">Voir la source →</a>
+        ${/^https?:\/\//i.test(event.url || "") ? `<a class="popup-link" href="${escapeHtml(event.url)}" target="_blank" rel="noopener">Voir la source →</a>` : ""}
       </div>
     `;
   }
@@ -214,11 +227,14 @@
     if (!state.map || !window.google?.maps) return;
     clearMarkers();
 
-    events.forEach((event) => {
+    const pinned = events.filter(
+      (event) => Number.isFinite(Number(event.lat)) && Number.isFinite(Number(event.lng))
+    );
+    pinned.forEach((event) => {
       const meta = catMeta(event.category);
       const selected = event.id === state.selectedId;
       const marker = new google.maps.Marker({
-        position: spreadPosition(event, events),
+        position: spreadPosition(event, pinned),
         map: state.map,
         title: event.title,
         zIndex: selected ? 1000 : 1,
@@ -240,9 +256,12 @@
   }
 
   function fitToEvents(events) {
-    if (!state.map || !events.length) return;
+    const pinned = events.filter(
+      (event) => Number.isFinite(Number(event.lat)) && Number.isFinite(Number(event.lng))
+    );
+    if (!state.map || !pinned.length) return;
     const bounds = new google.maps.LatLngBounds();
-    events.forEach((e) => bounds.extend({ lat: e.lat, lng: e.lng }));
+    pinned.forEach((event) => bounds.extend({ lat: Number(event.lat), lng: Number(event.lng) }));
     state.map.fitBounds(bounds, { top: 80, right: 440, bottom: 80, left: 40 });
     const listener = google.maps.event.addListenerOnce(state.map, "bounds_changed", () => {
       if (state.map.getZoom() > 12) state.map.setZoom(12);
