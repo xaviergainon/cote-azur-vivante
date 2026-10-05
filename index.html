@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Côte d'Azur Vivante — Agenda carte Alpes-Maritimes</title>
+    <meta
+      name="description"
+      content="Carte interactive jour par jour des spectacles, festivals, conférences et sorties dans les Alpes-Maritimes."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600&family=Sora:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/map.css" />
+  </head>
+  <body>
+    <div id="map" aria-label="Carte des manifestations dans les Alpes-Maritimes"></div>
+    <div class="atmosphere" aria-hidden="true"></div>
+
+    <div id="mapError" class="map-error" hidden></div>
+
+    <header class="brand-bar">
+      <div class="brand-mark" aria-hidden="true">06</div>
+      <div class="brand-text">
+        <strong>Côte d'Azur Vivante</strong>
+        <span>Agenda vivant · Alpes-Maritimes</span>
+      </div>
+    </header>
+
+    <aside class="panel" aria-label="Programme par jour">
+      <div class="panel-head">
+        <h1>Parcours du soir</h1>
+        <p>
+          Zoome, déplace-toi, choisis un jour — chaque point mène à une salle, un festival ou une
+          conférence du 06.
+        </p>
+      </div>
+
+      <div class="day-rail" id="dayRail" role="tablist" aria-label="Choisir un jour"></div>
+      <div class="city-rail" id="cityRail" aria-label="Filtrer par ville"></div>
+      <div class="filters" id="filters" aria-label="Filtrer par catégorie"></div>
+
+      <div class="toolbar">
+        <input
+          class="search"
+          id="search"
+          type="search"
+          placeholder="Rechercher un lieu, un artiste…"
+          autocomplete="off"
+        />
+        <button type="button" class="toggle" id="freeToggle" aria-pressed="false">Gratuit</button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="list" id="list"></div>
+
+      <footer class="panel-foot">
+        Données agrégées (pas exhaustives) ·
+        <span id="sources"></span>
+      </footer>
+    </aside>
+
+    <div class="map-tools">
+      <button type="button" class="map-tool" id="recenterBtn" title="Recadrer sur le jour">Recadrer</button>
+    </div>
+
+    <div class="hint">
+      Molette pour zoomer · glisser pour se déplacer · clic sur un point ou une fiche pour voler
+      vers le lieu. <kbd>Gratuit</kbd> filtre les entrées libres.
+    </div>
+
+    <div class="splash" id="splash">
+      <div class="splash-inner">
+        <div class="eyebrow">Alpes-Maritimes · octobre 2026</div>
+        <h1>Côte d'Azur Vivante</h1>
+        <p>
+          Une carte pour envie de sortir : théâtre, festivals, conférences, concerts et petits
+          lieux — jour par jour, de Nice à l'arrière-pays.
+        </p>
+        <button type="button" class="splash-btn" id="enterBtn">Explorer la carte</button>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/events-data.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
