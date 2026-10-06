@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --ink: #07161c;
   --panel: #102a34;
   --line: rgba(232, 244, 242, 0.14);
@@ -177,4 +178,31 @@ textarea { min-height: 90px; resize: vertical; }
   .event strong, .item strong { overflow-wrap: anywhere; }
   .log { font-size: 0.78rem; max-height: 42vh; }
   h1 { font-size: 1.55rem; }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --ink: #f4f8f7;
+    --panel: #ffffff;
+    --line: rgba(16, 48, 58, 0.14);
+    --foam: #10262e;
+    --mist: rgba(16, 38, 46, 0.64);
+    --gold: #8a5a12;
+    --teal: #0c6e67;
+    --coral: #c4513a;
+  }
+  body {
+    background:
+      radial-gradient(900px 420px at 0% -10%, rgba(12, 110, 103, 0.14), transparent 55%),
+      linear-gradient(165deg, #f7fbfa, #e7f2f0 55%, #f4f8f7);
+  }
+  .card, .panel {
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 18px 40px rgba(16, 42, 52, 0.08);
+  }
+  .nav button.active, .primary { color: #f4fffd; }
+  input, select, textarea { background: #fff; }
+  .item, .event { background: rgba(255, 255, 255, 0.72); }
+  .log { background: #e7f0ee; }
 }

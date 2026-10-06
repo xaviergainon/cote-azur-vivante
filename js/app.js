@@ -13,6 +13,23 @@
     return;
   }
 
+  const DAY_STYLE = [
+    { elementType: "geometry", stylers: [{ color: "#e7f2ef" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#1c3a44" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#f4f8f7" }] },
+    { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
+    { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#8a5a12" }] },
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+    { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#d5e4e1" }] },
+    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f3e6c8" }] },
+    { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "off" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#b7dfe8" }] },
+    { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#0c6e67" }] },
+    { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#eef6f4" }] },
+  ];
+
   const NIGHT_STYLE = [
     { elementType: "geometry", stylers: [{ color: "#0b1f28" }] },
     { elementType: "labels.text.fill", stylers: [{ color: "#c5ddd8" }] },
@@ -738,6 +755,16 @@
     els.mapError.textContent = message;
   }
 
+  const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function mapTheme() {
+    const dark = colorScheme.matches;
+    return {
+      styles: dark ? NIGHT_STYLE : DAY_STYLE,
+      backgroundColor: dark ? "#0a242e" : "#d5ebe7",
+    };
+  }
+
   function initMap() {
     const key = window.MAPS_CONFIG?.googleMapsApiKey;
     if (!key || key === "YOUR_GOOGLE_MAPS_API_KEY") {
@@ -763,10 +790,10 @@
         zoomControl: !window.matchMedia("(max-width: 979px)").matches,
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
         gestureHandling: "greedy",
-        styles: NIGHT_STYLE,
-        backgroundColor: "#0a242e",
+        ...mapTheme(),
         clickableIcons: false,
       });
+      colorScheme.addEventListener("change", () => state.map.setOptions(mapTheme()));
       state.map.addListener("click", () => {
         if (ignoreMapClick) return;
         clearSelection();
