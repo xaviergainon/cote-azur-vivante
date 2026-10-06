@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600&family=Sora:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/map.css?v=8" />
+    <link rel="stylesheet" href="css/map.css?v=9" />
   </head>
   <body data-view="map">
     <div id="map" aria-label="Carte des manifestations dans les Alpes-Maritimes"></div>
@@ -25,14 +25,14 @@
 
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">06</div>
-      <label class="search-pill">
+      <div class="search-pill">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="search" type="search" placeholder="Lieu, artiste, salle…" autocomplete="off" enterkeyhint="search" />
-      </label>
-      <button type="button" class="icon-btn" id="filterBtn" aria-label="Ouvrir les filtres">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span class="badge-count" id="filterBadge" hidden>0</span>
-      </button>
+        <input id="search" type="search" placeholder="Lieu, artiste, salle…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher" />
+        <button type="button" class="filter-btn" id="filterBtn" aria-label="Ouvrir les filtres">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="badge-count" id="filterBadge" hidden>0</span>
+        </button>
+      </div>
     </header>
 
     <section class="datebar" aria-label="Choisir un jour">
@@ -139,6 +139,6 @@
     </div>
 
     <script src="js/config.js"></script>
-    <script src="js/app.js?v=8"></script>
+    <script src="js/app.js?v=9"></script>
   </body>
 </html>

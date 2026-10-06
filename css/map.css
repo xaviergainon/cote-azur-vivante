@@ -125,6 +125,7 @@ a { color: var(--gold); }
 
 .topbar {
   position: absolute;
+  z-index: 28;
   top: var(--safe-top);
   left: 12px;
   right: 12px;
@@ -171,6 +172,20 @@ a { color: var(--gold); }
   font-size: 16px;
 }
 .search-pill input::placeholder { color: var(--placeholder); }
+.filter-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  margin-right: -8px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--teal);
+  color: var(--on-accent);
+}
+.filter-btn svg { width: 18px; height: 18px; }
 
 .icon-btn, .pill-btn, .ghost-btn, .text-btn, .toggle {
   border: 1px solid var(--line);
@@ -190,6 +205,7 @@ a { color: var(--gold); }
 }
 .icon-btn svg { width: 20px; height: 20px; }
 
+.badge-count[hidden] { display: none; }
 .badge-count {
   position: absolute;
   top: -2px;
@@ -208,7 +224,7 @@ a { color: var(--gold); }
 
 .datebar {
   position: absolute;
-  top: calc(var(--safe-top) + 58px);
+  top: calc(var(--safe-top) + 64px);
   left: 12px;
   right: 12px;
   padding: 10px 10px 8px;
