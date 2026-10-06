@@ -134,28 +134,60 @@ function renderAuth() {
   });
 }
 
+function cursorModelOptions(current) {
+  const choices = [
+    ["", "Auto"],
+    ["composer-2.5", "Composer 2.5"],
+    ["grok-4.7", "Grok 4.7"],
+    ["gpt-5.4-mini", "GPT-5.4 Mini"],
+    ["gemini-3.8-flash", "Gemini 3.8 Flash"],
+    ["claude-sonnet-5", "Claude Sonnet 5"],
+  ];
+  const known = new Set(choices.map(([id]) => id));
+  if (current && !known.has(current)) choices.push([current, current]);
+  return choices
+    .map(([id, label]) => `<option value="${esc(id)}" ${id === (current || "") ? "selected" : ""}>${esc(label)}</option>`)
+    .join("");
+}
+
 function keysView() {
   const settings = state.settings;
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Clés API</h2>
-      <p class="hint">Gemini sert à la collecte. Google Maps sert à la carte publique. Une clé déjà enregistrée n’est plus affichée en clair.</p>
+      <p class="hint">La collecte utilise Gemini ou Cursor. Google Maps sert à la carte publique. Une clé déjà enregistrée n’est plus affichée en clair.</p>
       <p>
         <span class="pill ${settings.gemini.configured ? "" : "warn"}">Gemini ${settings.gemini.configured ? settings.gemini.hint : "manquante"}</span>
+        <span class="pill ${settings.cursor?.configured ? "" : "warn"}">Cursor ${settings.cursor?.configured ? settings.cursor.hint : "manquante"}</span>
         <span class="pill ${settings.maps.configured ? "" : "warn"}">Maps ${settings.maps.configured ? settings.maps.hint : "manquante"}</span>
       </p>
       <form id="keysForm" class="stack">
+        <label>Collecte
+          <select name="provider">
+            <option value="gemini" ${settings.provider === "cursor" ? "" : "selected"}>Gemini</option>
+            <option value="cursor" ${settings.provider === "cursor" ? "selected" : ""}>Cursor</option>
+          </select>
+        </label>
         <div class="grid">
           ${field("geminiApiKey", "Clé Gemini", "", 'placeholder="Colle une nouvelle clé pour la remplacer" autocomplete="off"')}
+          ${field("cursorApiKey", "Clé Cursor", "", 'placeholder="crsr_…" autocomplete="off"')}
           ${field("googleMapsApiKey", "Clé Google Maps", "", 'placeholder="Maps JavaScript API" autocomplete="off"')}
         </div>
         ${field("model", "Modèle Gemini", settings.model)}
+        <label>Modèle Cursor
+          <select name="cursorModel">
+            ${cursorModelOptions(settings.cursorModel)}
+          </select>
+        </label>
+        <p class="hint">Cursor lance un agent cloud sans dépôt, puis le supprime. Il ne modifie pas le code. Laisser Auto utilise le modèle par défaut du compte.</p>
         <p class="error">${esc(state.error)}</p>
         <p class="hint">${esc(state.message)}</p>
         <div class="row">
           <button class="primary" type="submit">Enregistrer</button>
           <button class="ghost" type="button" id="testGemini">Tester Gemini</button>
+          <button class="ghost" type="button" id="testCursor">Tester Cursor</button>
           <button class="danger" type="button" id="clearGemini">Retirer Gemini</button>
+          <button class="danger" type="button" id="clearCursor">Retirer Cursor</button>
           <button class="danger" type="button" id="clearMaps">Retirer Maps</button>
         </div>
       </form>
@@ -432,7 +464,19 @@ function bindApp() {
     render();
   });
 
-  for (const [id, which] of [["clearGemini", "gemini"], ["clearMaps", "maps"]]) {
+  document.getElementById("testCursor")?.addEventListener("click", async () => {
+    state.error = "";
+    state.message = "";
+    try {
+      const result = await api("/api/admin/settings/test-cursor", { method: "POST", body: "{}" });
+      state.message = `Clé Cursor « ${result.name} » reconnue.`;
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  for (const [id, which] of [["clearGemini", "gemini"], ["clearCursor", "cursor"], ["clearMaps", "maps"]]) {
     document.getElementById(id)?.addEventListener("click", async () => {
       state.settings = await api("/api/admin/settings/clear", {
         method: "POST",

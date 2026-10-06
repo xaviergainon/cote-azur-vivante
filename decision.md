@@ -24,8 +24,9 @@ Choix faits pour l’agent interne, sans les redemander.
 
 ## Clés
 
-- Gemini est obligatoire pour la collecte. Google Maps sert uniquement à la carte.
-- Les deux se saisissent dans l’admin et restent chiffrées. Elles ne sont pas dans Git.
+- Gemini est le moteur par défaut de la collecte. Google Maps sert uniquement à la carte.
+- Cursor peut remplacer Gemini depuis l’admin. Sa clé lance un agent cloud sans dépôt : il ne modifie pas le code et il est supprimé à la fin de la collecte. Le choix reste sur Gemini tant qu’on ne le change pas.
+- Les clés se saisissent dans l’admin et restent chiffrées. Elles ne sont pas dans Git.
 
 ## Carte, liste, agenda
 
