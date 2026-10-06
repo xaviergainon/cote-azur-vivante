@@ -47,10 +47,18 @@
     { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#0f2a34" }] },
   ];
 
-  function todayIso() {
-    const now = new Date();
-    const p = (n) => String(n).padStart(2, "0");
-    return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+  function parisToday() {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Paris",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  }
+
+  function shiftIsoDay(iso, delta) {
+    const [year, month, day] = iso.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day + delta)).toISOString().slice(0, 10);
   }
 
   function dayDate(iso) {
@@ -67,7 +75,7 @@
     };
   }
 
-  const today = todayIso();
+  const today = parisToday();
   const state = {
     day: data.meta.days.includes(today) ? today : data.meta.days[0] || today,
     categories: new Set(Object.keys(data.categories)),
@@ -154,7 +162,10 @@
   }
 
   function timelineDays() {
-    return [...new Set([...data.meta.days, state.day])].sort();
+    const start = shiftIsoDay(today, -1);
+    const days = [];
+    for (let offset = 0; offset <= 31; offset += 1) days.push(shiftIsoDay(start, offset));
+    return days;
   }
 
   function citiesForDay() {
