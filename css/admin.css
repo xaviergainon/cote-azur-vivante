@@ -127,6 +127,27 @@ textarea { min-height: 90px; resize: vertical; }
 }
 
 .event { grid-template-columns: 1fr auto; align-items: center; cursor: pointer; }
+.event-main { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.image-box { display: grid; gap: 10px; }
+.shot, .thumb {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 14px;
+  background: rgba(7, 22, 28, 0.35);
+}
+.shot-empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  color: var(--mist);
+  font-size: 0.85rem;
+}
+.thumb { width: 48px; height: 48px; max-width: none; aspect-ratio: 1; border-radius: 10px; }
 .event.active { border-color: var(--gold); }
 
 .meta { color: var(--mist); font-size: 0.82rem; }

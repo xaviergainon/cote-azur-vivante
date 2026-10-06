@@ -34,3 +34,4 @@ Choix faits pour l’agent interne, sans les redemander.
 - « Dans mon agenda » télécharge un fichier `.ics` (Apple, Google, Outlook) : le jour affiché depuis la carte ou la liste, le mois affiché depuis le calendrier, ou un seul événement.
 - Sur grand écran, la carte reste visible. La liste et le calendrier sont un panneau à droite. La fiche événement reste dans la colonne de gauche, au-dessus du logo Google.
 - Le thème suit le réglage du client (`prefers-color-scheme`) : papier clair ou nuit, carte comprise. Pas de bouton dans l’application.
+- L’illustration vient de l’affiche de la page source (`og:image`). Une image trop petite, un logo ou une icône est écarté. Elle reste en proposition tant que l’admin ne la retient pas. Sur la carte, la fiche et l’admin, le cadre est le même 16:9, recadré au centre. Le bandeau de la carte en montre un carré.

@@ -103,6 +103,7 @@
     peek: document.getElementById("peek"),
     peekKicker: document.getElementById("peekKicker"),
     peekTitle: document.getElementById("peekTitle"),
+    peekShot: document.getElementById("peekShot"),
     peekMeta: document.getElementById("peekMeta"),
     ride: document.getElementById("ride"),
     rideBody: document.getElementById("rideBody"),
@@ -305,10 +306,17 @@
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }
 
+  function shotHtml(event) {
+    if (!event.image) return "";
+    const src = escapeHtml(event.image);
+    return `<img class="shot" src="${src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  }
+
   function cardHtml(event) {
     const meta = catMeta(event.category);
     const active = event.id === state.selectedId ? " active" : "";
     return `<article class="card${active}" style="--cat:${meta.color}">
+      ${shotHtml(event)}
       <button type="button" class="card-open" data-id="${escapeHtml(event.id)}">
         <div class="card-top"><span class="badge">${escapeHtml(meta.label)}</span><span class="time">${escapeHtml(event.time)}</span></div>
         <h3>${escapeHtml(event.title)}</h3>
@@ -404,6 +412,8 @@
     if (!show) return;
     const event = nextUp(events);
     const meta = catMeta(event.category);
+    els.peekShot.hidden = !event.image;
+    els.peekShot.innerHTML = shotHtml(event);
     els.peekKicker.textContent = state.day === today ? "Prochaine sortie" : "À ne pas manquer";
     els.peekTitle.textContent = event.title;
     els.peekMeta.textContent = `${event.time || "Horaire à confirmer"} · ${meta.label} · ${event.city}`;
@@ -425,6 +435,7 @@
       : "";
     const mapBtn = state.view === "map" ? "" : `<button type="button" data-map="${escapeHtml(event.id)}">Sur la carte</button>`;
     els.rideBody.innerHTML = `
+      ${shotHtml(event)}
       <p class="ride-kicker" style="color:${meta.color}">${escapeHtml(meta.label)} · ${escapeHtml(event.time || "horaire libre")}</p>
       <h3>${escapeHtml(event.title)}</h3>
       <p class="where">${escapeHtml(event.venue)}${event.city ? ` · ${escapeHtml(event.city)}` : ""}</p>

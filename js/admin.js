@@ -77,7 +77,11 @@ async function refreshSources() {
 }
 
 async function refreshEvents() {
-  const query = state.filter === "all" ? "" : `?status=${state.filter}`;
+  const query = state.filter === "images"
+    ? "?image=proposed"
+    : state.filter === "all"
+      ? ""
+      : `?status=${state.filter}`;
   state.events = (await api(`/api/admin/events${query}`)).events;
 }
 
@@ -286,9 +290,12 @@ function eventsView() {
     .map(
       (event) => `
       <article class="event ${state.selected?.id === event.id ? "active" : ""}" data-event="${esc(event.id)}">
-        <div>
-          <strong>${esc(event.title)}</strong>
-          <div class="meta">${esc(event.city)} · ${esc((event.days || []).join(", "))} · ${esc(event.status === "published" ? "publié" : "brouillon")}</div>
+        <div class="event-main">
+          ${event.image ? `<img class="thumb" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">` : ""}
+          <div>
+            <strong>${esc(event.title)}</strong>
+            <div class="meta">${esc(event.city)} · ${esc((event.days || []).join(", "))} · ${esc(event.status === "published" ? "publié" : "brouillon")}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+          </div>
         </div>
         <span class="pill ${event.status === "published" ? "" : "warn"}">${event.status === "published" ? "publié" : "brouillon"}</span>
       </article>`
@@ -301,13 +308,41 @@ function eventsView() {
         <button class="ghost" type="button" data-filter="draft">Brouillons</button>
         <button class="ghost" type="button" data-filter="published">Publiés</button>
         <button class="ghost" type="button" data-filter="all">Tous</button>
+        <button class="ghost" type="button" data-filter="images">Images à valider</button>
         <button class="primary" type="button" id="publishDrafts">Publier tous les brouillons</button>
       </div>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
       <div class="list">${cards || '<p class="hint">Rien dans ce filtre.</p>'}</div>
       ${eventForm()}
+      ${imageBox()}
     </section>`;
+}
+
+function imageBox() {
+  const event = state.selected;
+  if (!event?.id) return "";
+  const labels = { proposed: "À valider", approved: "Retenue", rejected: "Refusée" };
+  const label = labels[event.imageStatus] || "Aucune";
+  const frame = event.image
+    ? `<img class="shot" id="imageShot" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">`
+    : `<div class="shot shot-empty">Aucune affiche</div>`;
+  const page = /^https?:\/\//i.test(event.imagePage || "")
+    ? `<a href="${esc(event.imagePage)}" target="_blank" rel="noopener">page source</a>`
+    : "";
+  return `
+    <div class="image-box">
+      <h3>Illustration</h3>
+      <p class="hint">Même cadre 16:9 pour toutes les sorties, recadré au centre. L’image n’apparaît sur la carte qu’une fois retenue.</p>
+      ${frame}
+      <p class="meta">${esc(label)}${page ? ` · ${page}` : ""}</p>
+      <div class="row">
+        <button class="primary" type="button" id="keepImage" ${event.image ? "" : "disabled"}>Retenir</button>
+        <button class="ghost" type="button" id="dropImage" ${event.image ? "" : "disabled"}>Refuser</button>
+      </div>
+      <label>Autre adresse d’image<input id="imageUrl" type="url" placeholder="https://"></label>
+      <button class="ghost" type="button" id="useImage">Utiliser cette adresse</button>
+    </div>`;
 }
 
 function renderApp() {
@@ -531,6 +566,24 @@ function bindApp() {
     render();
   });
 
+  const imageShot = document.getElementById("imageShot");
+  const markSmallShot = () => {
+    if (!imageShot?.naturalWidth) return;
+    if (imageShot.naturalWidth >= 640 && imageShot.naturalHeight >= 360) return;
+    const meta = document.querySelector(".image-box .meta");
+    if (!meta || meta.dataset.sized) return;
+    meta.dataset.sized = "1";
+    meta.insertAdjacentText("beforeend", " · petite, le recadrage sera flou");
+  };
+  if (imageShot?.complete) markSmallShot();
+  else imageShot?.addEventListener("load", markSmallShot);
+
+  document.getElementById("keepImage")?.addEventListener("click", () => decideImage("approve"));
+  document.getElementById("dropImage")?.addEventListener("click", () => decideImage("reject"));
+  document.getElementById("useImage")?.addEventListener("click", () => {
+    decideImage("use", document.getElementById("imageUrl")?.value || "");
+  });
+
   document.getElementById("eventForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     state.error = "";
@@ -552,6 +605,24 @@ function bindApp() {
     }
     render();
   });
+}
+
+async function decideImage(decision, url) {
+  if (!state.selected) return;
+  state.error = "";
+  state.message = "";
+  try {
+    const saved = await api(`/api/admin/events/${state.selected.id}/image`, {
+      method: "POST",
+      body: JSON.stringify({ decision, url }),
+    });
+    state.message = decision === "reject" ? "Image refusée." : "Image retenue.";
+    await refreshEvents();
+    state.selected = state.events.find((item) => item.id === saved.event.id) || saved.event;
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
 }
 
 async function boot() {
