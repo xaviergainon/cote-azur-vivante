@@ -238,16 +238,18 @@ function agentView() {
     ? new Date(schedule.nextRun).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })
     : "";
   const kind = run?.trigger_name === "schedule" ? "quotidien" : "manuel";
+  const provider = state.settings?.provider === "cursor" ? "cursor" : "gemini";
+  const cursorReady = Boolean(state.settings?.cursor?.configured);
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Agent quotidien</h2>
-      <p class="hint">Chaque jour, à l’heure de Paris, l’agent interroge Google via Gemini puis lit les sources activées. Il couvre d’hier à dans 30 jours, pas seulement la semaine. Les événements arrivent en brouillon. Rien n’est publié sans toi.</p>
+      <p class="hint">Chaque jour, à l’heure de Paris, la collecte lit les sources activées sur 30 jours. Les événements arrivent en brouillon. Rien n’est publié sans toi.</p>
       <form id="scheduleForm" class="stack">
         <label class="check"><input type="checkbox" name="enabled" ${schedule.enabled ? "checked" : ""}> Collecte automatique</label>
         <div class="grid">
           <label>Heure (Paris)<input name="time" type="time" value="${esc(schedule.time)}" required></label>
         </div>
-        <label>Recherches Google, une par ligne
+        <label>Recherches, une par ligne
           <textarea name="queries">${esc((schedule.queries || []).join("\n"))}</textarea>
         </label>
         <p class="hint">Prochaine collecte : ${esc(when)}</p>
@@ -255,10 +257,21 @@ function agentView() {
         <p class="hint">${esc(state.message)}</p>
         <div class="row">
           <button class="primary" type="submit">Enregistrer le planning</button>
-          <button class="ghost" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
           <a href="#events" id="goDrafts">Voir les brouillons</a>
         </div>
       </form>
+      <label>Moteur
+        <select id="providerPick">
+          <option value="gemini" ${provider === "gemini" ? "selected" : ""}>Gemini</option>
+          <option value="cursor" ${provider === "cursor" ? "selected" : ""}>Cursor</option>
+        </select>
+      </label>
+      <p class="hint">${provider === "cursor"
+        ? "Cursor lance un agent cloud sans dépôt. Compte environ une minute par question."
+        : "Gemini interroge Google, puis lit les pages."}${cursorReady ? "" : " La clé Cursor n’est pas encore enregistrée."}</p>
+      <div class="row">
+        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
+      </div>
       <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
@@ -420,7 +433,10 @@ function bindApp() {
       try {
         if (state.view === "sources") await refreshSources();
         if (state.view === "events") await refreshEvents();
-        if (state.view === "agent") await refreshRuns();
+        if (state.view === "agent") {
+          await refreshSettings();
+          await refreshRuns();
+        }
         if (state.view === "keys") await refreshSettings();
       } catch (error) {
         state.error = error.message;
@@ -552,9 +568,29 @@ function bindApp() {
     render();
   });
 
+  document.getElementById("providerPick")?.addEventListener("change", async (event) => {
+    const provider = event.target.value === "cursor" ? "cursor" : "gemini";
+    state.error = "";
+    try {
+      state.settings = await api("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({ provider }),
+      });
+      state.message = provider === "cursor" ? "Les prochaines collectes utilisent Cursor." : "Les prochaines collectes utilisent Gemini.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
   document.getElementById("startRun")?.addEventListener("click", async () => {
     state.error = "";
     try {
+      const provider = document.getElementById("providerPick")?.value === "cursor" ? "cursor" : "gemini";
+      state.settings = await api("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify({ provider }),
+      });
       await api("/api/admin/runs", { method: "POST", body: "{}" });
       state.busy = true;
       await refreshRuns();
