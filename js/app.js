@@ -612,7 +612,10 @@
     renderRide();
     renderPeek(events);
     const datebar = document.querySelector(".datebar");
-    if (datebar) document.documentElement.style.setProperty("--date-h", `${Math.ceil(datebar.getBoundingClientRect().height)}px`);
+    if (datebar && getComputedStyle(datebar).display !== "none") {
+      const bottom = Math.ceil(datebar.getBoundingClientRect().bottom);
+      document.documentElement.style.setProperty("--list-top", `${bottom + 16}px`);
+    }
   }
 
   function onCardClick(event) {

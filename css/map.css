@@ -26,6 +26,11 @@
   --handle: rgba(232, 244, 242, 0.28);
   --splash-top: #07161c;
   --splash-bottom: #123845;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Sora", "Segoe UI", sans-serif;
+  --top: 12px;
+  --bar: calc(64px + env(safe-area-inset-bottom));
+  --safe-top: max(12px, env(safe-area-inset-top));
 }
 
 @media (prefers-color-scheme: light) {
@@ -58,12 +63,6 @@
     --splash-top: #e7f4f1;
     --splash-bottom: #f7fbfa;
   }
-}
-  --font-display: "Fraunces", Georgia, serif;
-  --font-ui: "Sora", "Segoe UI", sans-serif;
-  --top: 12px;
-  --bar: calc(64px + env(safe-area-inset-bottom));
-  --safe-top: max(12px, env(safe-area-inset-top));
 }
 
 *,
@@ -445,16 +444,19 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   background:
     radial-gradient(800px 320px at 10% -10%, rgba(62, 207, 194, 0.14), transparent 55%),
     var(--ink);
-  padding: calc(var(--safe-top) + 70px + var(--date-h, 120px)) 14px calc(var(--bar) + 18px);
+  padding: var(--list-top, calc(var(--safe-top) + 190px)) 14px calc(var(--bar) + 28px);
+  overflow-x: hidden;
 }
 body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
-.page-inner { max-width: 760px; margin: 0 auto; }
+.page-inner { max-width: 760px; margin: 0 auto; min-width: 0; }
 .page-tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin: 4px 0 12px;
+  min-width: 0;
 }
 .page-tools p { margin: 0; flex: 1 1 120px; color: var(--mist); }
 .page-tools .pill-btn { flex: 0 0 auto; }
@@ -480,7 +482,9 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
   text-align: left;
 }
 .card.active { border-color: rgba(62, 207, 194, 0.65); }
-.card-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.card-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; min-width: 0; }
+.card h3, .card .meta { overflow-wrap: anywhere; }
+.card .time { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .badge { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cat, var(--teal)); }
 .card .time { font-size: 0.8rem; color: var(--mist); }
 .card h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 1.12rem; font-weight: 550; line-height: 1.2; }
