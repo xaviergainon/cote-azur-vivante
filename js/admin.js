@@ -79,9 +79,11 @@ async function refreshSources() {
 async function refreshEvents() {
   const query = state.filter === "images"
     ? "?image=proposed"
-    : state.filter === "all"
-      ? ""
-      : `?status=${state.filter}`;
+    : state.filter === "missing"
+      ? "?flag=missing"
+      : state.filter === "all"
+        ? ""
+        : `?status=${state.filter}`;
   state.events = (await api(`/api/admin/events${query}`)).events;
 }
 
@@ -295,7 +297,7 @@ function agentView() {
         <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}"></label>
         <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}"></label>
       </div>
-      <p class="hint">Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours.</p>
+      <p class="hint">Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les jours déjà parcourus sont relus après les jours neufs : l’agent y cherche les nouveautés, puis signale les sorties qui ont disparu. Rien n’est supprimé sans toi.</p>
       <div class="row">
         <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
       </div>
@@ -335,8 +337,9 @@ function eventForm() {
         <label>Catégorie<select name="category">${options}</select></label>
         <label>Statut
           <select name="status">
-            <option value="draft" ${event.status !== "published" ? "selected" : ""}>Brouillon</option>
+            <option value="draft" ${event.status !== "published" && event.status !== "cancelled" ? "selected" : ""}>Brouillon</option>
             <option value="published" ${event.status === "published" ? "selected" : ""}>Publié</option>
+            <option value="cancelled" ${event.status === "cancelled" ? "selected" : ""}>Annulé</option>
           </select>
         </label>
         ${field("city", "Ville", event.city)}
@@ -357,21 +360,29 @@ function eventForm() {
     </form>`;
 }
 
+function eventState(event) {
+  if (event.flagStatus === "missing" && event.status !== "cancelled") return { label: "à vérifier", warn: true };
+  if (event.status === "published") return { label: "publié", warn: false };
+  if (event.status === "cancelled") return { label: "annulé", warn: true };
+  return { label: "brouillon", warn: true };
+}
+
 function eventsView() {
   const cards = state.events
-    .map(
-      (event) => `
+    .map((event) => {
+      const stamp = eventState(event);
+      return `
       <article class="event ${state.selected?.id === event.id ? "active" : ""}" data-event="${esc(event.id)}">
         <div class="event-main">
           ${event.image ? `<img class="thumb" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">` : ""}
           <div>
             <strong>${esc(event.title)}</strong>
-            <div class="meta">${esc(event.city)} · ${esc((event.days || []).join(", "))} · ${esc(event.status === "published" ? "publié" : "brouillon")}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+            <div class="meta">${esc(event.city)} · ${esc((event.days || []).join(", "))} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
           </div>
         </div>
-        <span class="pill ${event.status === "published" ? "" : "warn"}">${event.status === "published" ? "publié" : "brouillon"}</span>
-      </article>`
-    )
+        <span class="pill ${stamp.warn ? "warn" : ""}">${esc(stamp.label)}</span>
+      </article>`;
+    })
     .join("");
   return `
     <section class="panel stack" style="padding:18px">
@@ -379,6 +390,8 @@ function eventsView() {
       <div class="row">
         <button class="ghost" type="button" data-filter="draft">Brouillons</button>
         <button class="ghost" type="button" data-filter="published">Publiés</button>
+        <button class="ghost" type="button" data-filter="missing">À vérifier</button>
+        <button class="ghost" type="button" data-filter="cancelled">Annulés</button>
         <button class="ghost" type="button" data-filter="all">Tous</button>
         <button class="ghost" type="button" data-filter="images">Images à valider</button>
         <button class="primary" type="button" id="publishDrafts">Publier tous les brouillons</button>
@@ -387,8 +400,24 @@ function eventsView() {
       <p class="hint">${esc(state.message)}</p>
       <div class="list">${cards || '<p class="hint">Rien dans ce filtre.</p>'}</div>
       ${eventForm()}
+      ${reviewBox()}
       ${imageBox()}
     </section>`;
+}
+
+function reviewBox() {
+  const event = state.selected;
+  if (!event?.id || event.flagStatus !== "missing" || event.status === "cancelled") return "";
+  return `
+    <div class="image-box">
+      <h3>Plus annoncé</h3>
+      <p class="hint">${esc(event.flagNote || "L’agent ne l’a plus vu sur sa source.")} Tu choisis : le noter annulé, le supprimer, ou le garder.</p>
+      <div class="row">
+        <button class="primary" type="button" id="flagCancel">Noter annulé</button>
+        <button class="danger" type="button" id="flagDelete">Supprimer</button>
+        <button class="ghost" type="button" id="flagKeep">Toujours là</button>
+      </div>
+    </div>`;
 }
 
 function imageBox() {
@@ -696,6 +725,36 @@ function bindApp() {
   };
   if (imageShot?.complete) markSmallShot();
   else imageShot?.addEventListener("load", markSmallShot);
+
+  const decideFlag = async (decision) => {
+    if (!state.selected) return;
+    state.error = "";
+    try {
+      await api(`/api/admin/events/${state.selected.id}/flag`, {
+        method: "POST",
+        body: JSON.stringify({ decision }),
+      });
+      state.message = decision === "cancel"
+        ? "Événement noté annulé."
+        : decision === "delete"
+          ? "Événement supprimé."
+          : "Événement conservé.";
+      if (decision === "delete") state.selected = null;
+      await refreshEvents();
+      if (state.selected?.id) {
+        state.selected = state.events.find((event) => event.id === state.selected.id) || null;
+      }
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  };
+  document.getElementById("flagCancel")?.addEventListener("click", () => decideFlag("cancel"));
+  document.getElementById("flagDelete")?.addEventListener("click", () => {
+    if (!confirm("Supprimer cet événement ?")) return;
+    decideFlag("delete");
+  });
+  document.getElementById("flagKeep")?.addEventListener("click", () => decideFlag("keep"));
 
   document.getElementById("keepImage")?.addEventListener("click", () => decideImage("approve"));
   document.getElementById("dropImage")?.addEventListener("click", () => decideImage("reject"));

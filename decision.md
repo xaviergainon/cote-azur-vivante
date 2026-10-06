@@ -20,6 +20,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 - Seulement les événements dont une date tombe entre hier et **aujourd’hui + 30 jours**, en calendrier de Paris, dans les Alpes-Maritimes. Les recherches ne s’arrêtent pas à la semaine en cours : chaque lecture demande toute cette fenêtre, et une plage de dates est développée jour par jour.
 - Un lancement manuel peut fixer un début et une fin, pour un essai, sur 92 jours au plus. Sans ces dates, et pour la collecte automatique, la fenêtre reste les 30 jours.
+- Les jours déjà parcourus par une collecte terminée sont relus en dernier. La consigne change : d’abord les sorties nouvelles, ensuite celles déjà en base. Si une sortie n’est plus annoncée, elle apparaît dans « À vérifier ». L’admin la note annulée ou la supprime. Rien n’est retiré tout seul.
 - Les nouveaux restent en **brouillon**. Un événement déjà publié n’est pas réécrit.
 - Rien n’est publié sans action dans l’admin.
 
