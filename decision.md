@@ -26,3 +26,10 @@ Choix faits pour l’agent interne, sans les redemander.
 
 - Gemini est obligatoire pour la collecte. Google Maps sert uniquement à la carte.
 - Les deux se saisissent dans l’admin et restent chiffrées. Elles ne sont pas dans Git.
+
+## Carte, liste, agenda
+
+- Sur téléphone, la carte est en plein écran. Le jour se choisit sur une barre de temps. Les filtres (ville, envie, gratuit, recherche) s’ouvrent dans un volet. La liste et le calendrier sont deux autres vues, avec la même barre.
+- Une carte « prochaine sortie » propose l’événement le plus proche. L’ouvrir donne l’itinéraire, l’ajout à l’agenda, et le retour sur la carte.
+- « Dans mon agenda » télécharge un fichier `.ics` (Apple, Google, Outlook) : le jour affiché depuis la carte ou la liste, le mois affiché depuis le calendrier, ou un seul événement.
+- Sur grand écran, la carte reste visible. La liste et le calendrier sont un panneau à droite. La fiche événement reste dans la colonne de gauche, au-dessus du logo Google.
