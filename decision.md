@@ -18,7 +18,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 ## Ce qui entre dans la base
 
-- Seulement les événements dont une date tombe entre hier et les **30 prochains jours**, dans les Alpes-Maritimes.
+- Seulement les événements dont une date tombe entre hier et **aujourd’hui + 30 jours**, en calendrier de Paris, dans les Alpes-Maritimes. Les recherches ne s’arrêtent pas à la semaine en cours : chaque lecture demande toute cette fenêtre, et une plage de dates est développée jour par jour.
 - Les nouveaux restent en **brouillon**. Un événement déjà publié n’est pas réécrit.
 - Rien n’est publié sans action dans l’admin.
 

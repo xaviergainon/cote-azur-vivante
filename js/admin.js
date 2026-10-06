@@ -205,7 +205,7 @@ function agentView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Agent quotidien</h2>
-      <p class="hint">Chaque jour, à l’heure de Paris, l’agent interroge Google via Gemini puis lit les sources activées. Les événements des 30 prochains jours arrivent en brouillon. Rien n’est publié sans toi.</p>
+      <p class="hint">Chaque jour, à l’heure de Paris, l’agent interroge Google via Gemini puis lit les sources activées. Il couvre d’hier à dans 30 jours, pas seulement la semaine. Les événements arrivent en brouillon. Rien n’est publié sans toi.</p>
       <form id="scheduleForm" class="stack">
         <label class="check"><input type="checkbox" name="enabled" ${schedule.enabled ? "checked" : ""}> Collecte automatique</label>
         <div class="grid">
