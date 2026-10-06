@@ -19,6 +19,7 @@ Choix faits pour l’agent interne, sans les redemander.
 ## Ce qui entre dans la base
 
 - Seulement les événements dont une date tombe entre hier et **aujourd’hui + 30 jours**, en calendrier de Paris, dans les Alpes-Maritimes. Les recherches ne s’arrêtent pas à la semaine en cours : chaque lecture demande toute cette fenêtre, et une plage de dates est développée jour par jour.
+- Un lancement manuel peut fixer un début et une fin, pour un essai, sur 92 jours au plus. Sans ces dates, et pour la collecte automatique, la fenêtre reste les 30 jours.
 - Les nouveaux restent en **brouillon**. Un événement déjà publié n’est pas réécrit.
 - Rien n’est publié sans action dans l’admin.
 

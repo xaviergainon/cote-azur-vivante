@@ -94,6 +94,25 @@ async function refreshRuns() {
   if (state.view === "agent") render();
 }
 
+function parisToday() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function shiftIsoDay(iso, delta) {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + delta)).toISOString().slice(0, 10);
+}
+
+function defaultWindow() {
+  const today = parisToday();
+  return { min: shiftIsoDay(today, -1), max: shiftIsoDay(today, 30) };
+}
+
 function field(name, label, value, extra = "") {
   return `<label>${label}<input name="${name}" value="${esc(value)}" ${extra}></label>`;
 }
@@ -240,6 +259,9 @@ function agentView() {
   const kind = run?.trigger_name === "schedule" ? "quotidien" : "manuel";
   const provider = state.settings?.provider === "cursor" ? "cursor" : "gemini";
   const cursorReady = Boolean(state.settings?.cursor?.configured);
+  const defaults = defaultWindow();
+  const windowMin = state.windowMin || defaults.min;
+  const windowMax = state.windowMax || defaults.max;
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Agent quotidien</h2>
@@ -269,6 +291,11 @@ function agentView() {
       <p class="hint">${provider === "cursor"
         ? "Cursor lance un agent cloud sans dépôt. Compte environ une minute par question."
         : "Gemini interroge Google, puis lit les pages."}${cursorReady ? "" : " La clé Cursor n’est pas encore enregistrée."}</p>
+      <div class="grid">
+        <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}"></label>
+        <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}"></label>
+      </div>
+      <p class="hint">Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours.</p>
       <div class="row">
         <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
       </div>
@@ -583,6 +610,13 @@ function bindApp() {
     render();
   });
 
+  document.getElementById("windowMin")?.addEventListener("input", (event) => {
+    state.windowMin = event.target.value;
+  });
+  document.getElementById("windowMax")?.addEventListener("input", (event) => {
+    state.windowMax = event.target.value;
+  });
+
   document.getElementById("startRun")?.addEventListener("click", async () => {
     state.error = "";
     try {
@@ -591,7 +625,12 @@ function bindApp() {
         method: "PUT",
         body: JSON.stringify({ provider }),
       });
-      await api("/api/admin/runs", { method: "POST", body: "{}" });
+      const defaults = defaultWindow();
+      const minDay = document.getElementById("windowMin")?.value || defaults.min;
+      const maxDay = document.getElementById("windowMax")?.value || defaults.max;
+      state.windowMin = minDay;
+      state.windowMax = maxDay;
+      await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay }) });
       state.busy = true;
       await refreshRuns();
       startPoll();
