@@ -20,6 +20,7 @@ const state = {
   sources: [],
   events: [],
   filter: "draft",
+  eventPage: 0,
   runs: [],
   schedule: null,
   busy: false,
@@ -360,6 +361,13 @@ function eventForm() {
     </form>`;
 }
 
+function daysLabel(days) {
+  const list = [...(days || [])].filter(Boolean).sort();
+  if (!list.length) return "sans date";
+  if (list.length === 1) return list[0];
+  return `${list[0]} → ${list[list.length - 1]} · ${list.length} jours`;
+}
+
 function eventState(event) {
   if (event.flagStatus === "missing" && event.status !== "cancelled") return { label: "à vérifier", warn: true };
   if (event.status === "published") return { label: "publié", warn: false };
@@ -368,7 +376,11 @@ function eventState(event) {
 }
 
 function eventsView() {
-  const cards = state.events
+  const size = 8;
+  const pages = Math.max(1, Math.ceil(state.events.length / size));
+  state.eventPage = Math.min(Math.max(state.eventPage || 0, 0), pages - 1);
+  const slice = state.events.slice(state.eventPage * size, state.eventPage * size + size);
+  const cards = slice
     .map((event) => {
       const stamp = eventState(event);
       return `
@@ -377,13 +389,20 @@ function eventsView() {
           ${event.image ? `<img class="thumb" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">` : ""}
           <div>
             <strong>${esc(event.title)}</strong>
-            <div class="meta">${esc(event.city)} · ${esc((event.days || []).join(", "))} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+            <div class="meta">${esc(event.city)} · ${esc(daysLabel(event.days))} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
           </div>
         </div>
         <span class="pill ${stamp.warn ? "warn" : ""}">${esc(stamp.label)}</span>
       </article>`;
     })
     .join("");
+  const pager = state.events.length
+    ? `<div class="row pager">
+        <button class="ghost" type="button" data-page="-1" ${state.eventPage === 0 ? "disabled" : ""}>Précédent</button>
+        <span class="meta">${state.eventPage + 1} / ${pages} · ${state.events.length}</span>
+        <button class="ghost" type="button" data-page="1" ${state.eventPage >= pages - 1 ? "disabled" : ""}>Suivant</button>
+      </div>`
+    : "";
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Événements</h2>
@@ -398,10 +417,17 @@ function eventsView() {
       </div>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
-      <div class="list">${cards || '<p class="hint">Rien dans ce filtre.</p>'}</div>
-      ${eventForm()}
-      ${reviewBox()}
-      ${imageBox()}
+      <div class="events-workspace">
+        <div class="event-browser">
+          <div class="event-list">${cards || '<p class="hint">Rien dans ce filtre.</p>'}</div>
+          ${pager}
+        </div>
+        <div class="event-editor">
+          ${eventForm()}
+          ${reviewBox()}
+          ${imageBox()}
+        </div>
+      </div>
     </section>`;
 }
 
@@ -434,7 +460,7 @@ function imageBox() {
   return `
     <div class="image-box">
       <h3>Illustration</h3>
-      <p class="hint">Même cadre 16:9 pour toutes les sorties, recadré au centre. L’image n’apparaît sur la carte qu’une fois retenue.</p>
+      <p class="hint">Même cadre 16:9, recadré au centre. Une page qui liste plusieurs sorties ne propose plus son image de site. L’image n’apparaît sur la carte qu’une fois retenue.</p>
       ${frame}
       <p class="meta">${esc(label)}${page ? ` · ${page}` : ""}</p>
       <div class="row">
@@ -673,6 +699,7 @@ function bindApp() {
     event.preventDefault();
     state.view = "events";
     state.filter = "draft";
+    state.eventPage = 0;
     await refreshEvents();
     render();
   });
@@ -680,6 +707,7 @@ function bindApp() {
   app.querySelectorAll("[data-filter]").forEach((button) => {
     button.addEventListener("click", async () => {
       state.filter = button.dataset.filter;
+      state.eventPage = 0;
       state.selected = null;
       await refreshEvents();
       render();
@@ -690,8 +718,16 @@ function bindApp() {
     const result = await api("/api/admin/events/publish-drafts", { method: "POST", body: "{}" });
     state.message = `${result.count} événement(s) publié(s).`;
     state.filter = "published";
+    state.eventPage = 0;
     await refreshEvents();
     render();
+  });
+
+  app.querySelectorAll("[data-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.eventPage = (state.eventPage || 0) + Number(button.dataset.page || 0);
+      render();
+    });
   });
 
   app.querySelectorAll("[data-event]").forEach((card) => {

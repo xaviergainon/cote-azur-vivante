@@ -117,6 +117,30 @@ textarea { min-height: 90px; resize: vertical; }
 
 .list { display: grid; gap: 8px; }
 
+.events-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+.event-browser { display: grid; gap: 10px; min-width: 0; }
+.event-list {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+  padding-right: 4px;
+}
+.event-editor {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding-right: 4px;
+}
+.pager { justify-content: space-between; }
+
 .item, .event {
   display: grid;
   gap: 6px;
@@ -196,6 +220,9 @@ textarea { min-height: 90px; resize: vertical; }
   .grid { grid-template-columns: 1fr; }
   input, select, textarea, button { font-size: 16px; }
   .event { grid-template-columns: minmax(0, 1fr) auto; }
+  .events-workspace { grid-template-columns: 1fr; }
+  .event-editor { position: static; max-height: none; order: -1; }
+  .event-list { max-height: 46vh; }
   .event strong, .item strong { overflow-wrap: anywhere; }
   .log { font-size: 0.78rem; max-height: 42vh; }
   h1 { font-size: 1.55rem; }
