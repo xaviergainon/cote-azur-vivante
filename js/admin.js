@@ -423,9 +423,9 @@ function eventsView() {
           ${pager}
         </div>
         <div class="event-editor">
-          ${eventForm()}
-          ${reviewBox()}
           ${imageBox()}
+          ${reviewBox()}
+          ${eventForm()}
         </div>
       </div>
     </section>`;
@@ -448,7 +448,13 @@ function reviewBox() {
 
 function imageBox() {
   const event = state.selected;
-  if (!event?.id) return "";
+  if (!event?.id) {
+    return `
+      <div class="image-box">
+        <h3>Illustration</h3>
+        <p class="hint">Choisis une sortie dans la liste pour coller l’adresse d’une affiche.</p>
+      </div>`;
+  }
   const labels = { proposed: "À valider", approved: "Retenue", rejected: "Refusée" };
   const label = labels[event.imageStatus] || "Aucune";
   const frame = event.image
@@ -460,15 +466,15 @@ function imageBox() {
   return `
     <div class="image-box">
       <h3>Illustration</h3>
-      <p class="hint">Même cadre 16:9, recadré au centre. Une page qui liste plusieurs sorties ne propose plus son image de site. L’image n’apparaît sur la carte qu’une fois retenue.</p>
+      <p class="hint">Colle l’adresse d’une affiche, ou retiens celle proposée. Sans affiche propre à cette sortie, rien n’est proposé. Elle n’apparaît sur la carte qu’une fois retenue.</p>
       ${frame}
       <p class="meta">${esc(label)}${page ? ` · ${page}` : ""}</p>
+      <label>Adresse de l’affiche<input id="imageUrl" type="url" placeholder="https://" value="${esc(event.image || "")}"></label>
       <div class="row">
-        <button class="primary" type="button" id="keepImage" ${event.image ? "" : "disabled"}>Retenir</button>
+        <button class="primary" type="button" id="useImage">Utiliser cette adresse</button>
+        <button class="ghost" type="button" id="keepImage" ${event.image ? "" : "disabled"}>Retenir</button>
         <button class="ghost" type="button" id="dropImage" ${event.image ? "" : "disabled"}>Refuser</button>
       </div>
-      <label>Autre adresse d’image<input id="imageUrl" type="url" placeholder="https://"></label>
-      <button class="ghost" type="button" id="useImage">Utiliser cette adresse</button>
     </div>`;
 }
 
