@@ -307,42 +307,35 @@ function agentView() {
     </section>`;
 }
 
+const EVENT_PAGE_SIZE = 20;
+
 function eventForm() {
-  const event = state.selected || {
-    title: "",
-    days: [],
-    time: "",
-    category: "festival",
-    city: "",
-    venue: "",
-    address: "",
-    lat: "",
-    lng: "",
-    price: "",
-    free: false,
-    description: "",
-    url: "",
-    source: "",
-    status: "draft",
-  };
+  const event = state.selected;
+  if (!event?.id) return "";
+  const draft = event.status !== "published" && event.status !== "cancelled";
   const options = CATEGORIES.map(
     ([key, label]) => `<option value="${key}" ${event.category === key ? "selected" : ""}>${label}</option>`
   ).join("");
-  return `
-    <form id="eventForm" class="stack">
-      <h2>${state.selected ? "Modifier" : "Nouvel événement"}</h2>
-      ${field("title", "Titre", event.title, "required")}
-      <div class="grid">
-        ${field("days", "Dates", (event.days || []).join(", "), 'placeholder="2026-10-12, 2026-10-13"')}
-        ${field("time", "Horaire", event.time)}
-        <label>Catégorie<select name="category">${options}</select></label>
-        <label>Statut
+  const statusField = draft
+    ? ""
+    : `<label>Statut
           <select name="status">
             <option value="draft" ${event.status !== "published" && event.status !== "cancelled" ? "selected" : ""}>Brouillon</option>
             <option value="published" ${event.status === "published" ? "selected" : ""}>Publié</option>
             <option value="cancelled" ${event.status === "cancelled" ? "selected" : ""}>Annulé</option>
           </select>
-        </label>
+        </label>`;
+  const actions = draft
+    ? `<button class="primary" type="submit">Valider</button><button class="danger" type="button" id="refuseDraft">Refuser</button>`
+    : `<button class="primary" type="submit">Enregistrer</button>`;
+  return `
+    <form id="eventForm" class="stack">
+      ${field("title", "Titre", event.title, "required")}
+      <div class="grid">
+        ${field("days", "Dates", (event.days || []).join(", "), 'placeholder="2026-10-12, 2026-10-13"')}
+        ${field("time", "Horaire", event.time)}
+        <label>Catégorie<select name="category">${options}</select></label>
+        ${statusField}
         ${field("city", "Ville", event.city)}
         ${field("venue", "Lieu", event.venue)}
         ${field("lat", "Latitude", event.lat ?? "", 'inputmode="decimal"')}
@@ -353,11 +346,7 @@ function eventForm() {
       ${field("url", "Lien", event.url)}
       <label>Description<textarea name="description">${esc(event.description)}</textarea></label>
       <label class="check"><input type="checkbox" name="free" ${event.free ? "checked" : ""}> Entrée gratuite</label>
-      <div class="row">
-        <button class="primary" type="submit">${state.selected ? "Enregistrer" : "Créer"}</button>
-        ${state.selected ? '<button class="danger" type="button" id="deleteEvent">Supprimer</button>' : ""}
-        <button class="ghost" type="button" id="newEvent">Nouveau</button>
-      </div>
+      <div class="row">${actions}</div>
     </form>`;
 }
 
@@ -376,7 +365,7 @@ function eventState(event) {
 }
 
 function eventsView() {
-  const size = 8;
+  const size = EVENT_PAGE_SIZE;
   const pages = Math.max(1, Math.ceil(state.events.length / size));
   state.eventPage = Math.min(Math.max(state.eventPage || 0, 0), pages - 1);
   const slice = state.events.slice(state.eventPage * size, state.eventPage * size + size);
@@ -457,6 +446,7 @@ function imageBox() {
   }
   const labels = { proposed: "À valider", approved: "Retenue", rejected: "Refusée" };
   const label = labels[event.imageStatus] || "Aucune";
+  const verb = event.status !== "published" && event.status !== "cancelled" ? "valides" : "enregistres";
   const frame = event.image
     ? `<img class="shot" id="imageShot" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">`
     : `<div class="shot shot-empty">Aucune affiche</div>`;
@@ -466,15 +456,9 @@ function imageBox() {
   return `
     <div class="image-box">
       <h3>Illustration</h3>
-      <p class="hint">Colle l’adresse d’une affiche, ou retiens celle proposée. Sans affiche propre à cette sortie, rien n’est proposé. Elle n’apparaît sur la carte qu’une fois retenue.</p>
+      <p class="hint">${esc(label)}${page ? ` · ${page}` : ""}. L’adresse est enregistrée quand tu ${verb}.</p>
       ${frame}
-      <p class="meta">${esc(label)}${page ? ` · ${page}` : ""}</p>
       <label>Adresse de l’affiche<input id="imageUrl" type="url" placeholder="https://" value="${esc(event.image || "")}"></label>
-      <div class="row">
-        <button class="primary" type="button" id="useImage">Utiliser cette adresse</button>
-        <button class="ghost" type="button" id="keepImage" ${event.image ? "" : "disabled"}>Retenir</button>
-        <button class="ghost" type="button" id="dropImage" ${event.image ? "" : "disabled"}>Refuser</button>
-      </div>
     </div>`;
 }
 
@@ -743,19 +727,6 @@ function bindApp() {
     });
   });
 
-  document.getElementById("newEvent")?.addEventListener("click", () => {
-    state.selected = null;
-    render();
-  });
-
-  document.getElementById("deleteEvent")?.addEventListener("click", async () => {
-    if (!state.selected || !confirm("Supprimer cet événement ?")) return;
-    await api(`/api/admin/events/${state.selected.id}`, { method: "DELETE" });
-    state.selected = null;
-    await refreshEvents();
-    render();
-  });
-
   const imageShot = document.getElementById("imageShot");
   const markSmallShot = () => {
     if (!imageShot?.naturalWidth) return;
@@ -798,47 +769,74 @@ function bindApp() {
   });
   document.getElementById("flagKeep")?.addEventListener("click", () => decideFlag("keep"));
 
-  document.getElementById("keepImage")?.addEventListener("click", () => decideImage("approve"));
-  document.getElementById("dropImage")?.addEventListener("click", () => decideImage("reject"));
-  document.getElementById("useImage")?.addEventListener("click", () => {
-    decideImage("use", document.getElementById("imageUrl")?.value || "");
-  });
+  document.getElementById("refuseDraft")?.addEventListener("click", () => refuseDraft());
 
   document.getElementById("eventForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    state.error = "";
-    const body = formBody(event.currentTarget);
-    try {
-      if (state.selected) {
-        await api(`/api/admin/events/${state.selected.id}`, { method: "PATCH", body: JSON.stringify(body) });
-      } else {
-        const created = await api("/api/admin/events", { method: "POST", body: JSON.stringify(body) });
-        state.selected = { id: created.id };
-      }
-      state.message = "Événement enregistré.";
-      await refreshEvents();
-      if (state.selected?.id) {
-        state.selected = state.events.find((item) => item.id === state.selected.id) || state.selected;
-      }
-    } catch (error) {
-      state.error = error.message;
-    }
-    render();
+    const draft = state.selected && state.selected.status !== "published" && state.selected.status !== "cancelled";
+    if (draft) await commitEvent(event.currentTarget, { status: "published", next: true, message: "Validé." });
+    else await commitEvent(event.currentTarget, { message: "Enregistré." });
   });
 }
 
-async function decideImage(decision, url) {
+function neighborId(id) {
+  const index = state.events.findIndex((event) => event.id === id);
+  if (index < 0) return "";
+  return state.events[index + 1]?.id || state.events[index - 1]?.id || "";
+}
+
+function revealEvent(id) {
+  if (!id) {
+    state.selected = null;
+    return;
+  }
+  const index = state.events.findIndex((event) => event.id === id);
+  if (index < 0) {
+    state.selected = state.events[0] || null;
+    state.eventPage = 0;
+    return;
+  }
+  state.eventPage = Math.floor(index / EVENT_PAGE_SIZE);
+  state.selected = state.events[index];
+}
+
+async function commitEvent(form, { status, next = false, message } = {}) {
   if (!state.selected) return;
   state.error = "";
-  state.message = "";
+  const id = state.selected.id;
+  const nextId = next ? neighborId(id) : id;
+  const body = formBody(form);
+  if (status) body.status = status;
+  const imageUrl = document.getElementById("imageUrl")?.value.trim() || "";
   try {
-    const saved = await api(`/api/admin/events/${state.selected.id}/image`, {
-      method: "POST",
-      body: JSON.stringify({ decision, url }),
-    });
-    state.message = decision === "reject" ? "Image refusée." : "Image retenue.";
+    await api(`/api/admin/events/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+    if (imageUrl) {
+      await api(`/api/admin/events/${id}/image`, {
+        method: "POST",
+        body: JSON.stringify({ decision: "use", url: imageUrl }),
+      });
+    }
+    state.message = message || "Enregistré.";
     await refreshEvents();
-    state.selected = state.events.find((item) => item.id === saved.event.id) || saved.event;
+    revealEvent(nextId);
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
+async function refuseDraft() {
+  if (!state.selected) return;
+  state.error = "";
+  const nextId = neighborId(state.selected.id);
+  try {
+    await api(`/api/admin/events/${state.selected.id}/flag`, {
+      method: "POST",
+      body: JSON.stringify({ decision: "cancel" }),
+    });
+    state.message = "Refusé.";
+    await refreshEvents();
+    revealEvent(nextId);
   } catch (error) {
     state.error = error.message;
   }
