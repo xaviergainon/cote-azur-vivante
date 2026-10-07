@@ -92,6 +92,7 @@ async function refreshRuns() {
   const data = await api("/api/admin/runs");
   state.runs = data.runs;
   state.busy = data.busy;
+  state.missingImages = Number(data.missingImages || 0);
   state.schedule = await api("/api/admin/schedule");
   if (!data.busy) stopPoll();
   if (state.view === "agent") render();
@@ -265,6 +266,8 @@ function agentView() {
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
+  const task = state.runTask === "images" ? "images" : "discover";
+  const missing = Number(state.missingImages || 0);
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Agent quotidien</h2>
@@ -294,13 +297,21 @@ function agentView() {
       <p class="hint">${provider === "cursor"
         ? "Cursor lance un agent cloud sans dépôt. Compte environ une minute par question."
         : "Gemini interroge Google, puis lit les pages."}${cursorReady ? "" : " La clé Cursor n’est pas encore enregistrée."}</p>
+      <label>Passage
+        <select id="runTask">
+          <option value="discover" ${task === "discover" ? "selected" : ""}>Découvrir des sorties</option>
+          <option value="images" ${task === "images" ? "selected" : ""}>Compléter les affiches manquantes</option>
+        </select>
+      </label>
       <div class="grid">
-        <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}"></label>
-        <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}"></label>
+        <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}" ${task === "images" ? "disabled" : ""}></label>
+        <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}" ${task === "images" ? "disabled" : ""}></label>
       </div>
-      <p class="hint">Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les jours déjà parcourus sont relus après les jours neufs : l’agent y cherche les nouveautés, puis signale les sorties qui ont disparu. Rien n’est supprimé sans toi.</p>
+      <p class="hint">${task === "images"
+        ? `${missing} sortie(s) sans affiche. Ce passage ouvre leur lien, pas les agendas. Une page qui sert à plusieurs sorties est ignorée. 40 pages au plus. L’adresse proposée se valide ensuite à la main.`
+        : "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les jours déjà parcourus sont relus après les jours neufs."}</p>
       <div class="row">
-        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : "Lancer maintenant"}</button>
+        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : task === "images" ? "Compléter les affiches" : "Lancer maintenant"}</button>
       </div>
       <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
@@ -458,7 +469,10 @@ function imageBox() {
       <h3>Illustration</h3>
       <p class="hint">${esc(label)}${page ? ` · ${page}` : ""}. L’adresse est enregistrée quand tu ${verb}.</p>
       ${frame}
-      <label>Adresse de l’affiche<input id="imageUrl" type="url" placeholder="https://" value="${esc(event.image || "")}"></label>
+      <label>Adresse de l’affiche<input id="imageUrl" type="url" placeholder="https://" value="${esc(state.pendingFor === event.id && state.pendingImage != null ? state.pendingImage : (event.image || ""))}"></label>
+      <div class="row">
+        <button class="ghost" type="button" id="findImage" ${/^https?:\/\//i.test(event.url || "") ? "" : "disabled"}>Chercher l’affiche</button>
+      </div>
     </div>`;
 }
 
@@ -655,6 +669,11 @@ function bindApp() {
     render();
   });
 
+  document.getElementById("runTask")?.addEventListener("change", (event) => {
+    state.runTask = event.target.value === "images" ? "images" : "discover";
+    render();
+  });
+
   document.getElementById("windowMin")?.addEventListener("input", (event) => {
     state.windowMin = event.target.value;
   });
@@ -675,7 +694,9 @@ function bindApp() {
       const maxDay = document.getElementById("windowMax")?.value || defaults.max;
       state.windowMin = minDay;
       state.windowMax = maxDay;
-      await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay }) });
+      const task = document.getElementById("runTask")?.value === "images" ? "images" : "discover";
+      state.runTask = task;
+      await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;
       await refreshRuns();
       startPoll();
@@ -723,6 +744,8 @@ function bindApp() {
   app.querySelectorAll("[data-event]").forEach((card) => {
     card.addEventListener("click", () => {
       state.selected = state.events.find((event) => event.id === card.dataset.event) || null;
+      state.pendingImage = null;
+      state.pendingFor = "";
       render();
     });
   });
@@ -768,6 +791,23 @@ function bindApp() {
     decideFlag("delete");
   });
   document.getElementById("flagKeep")?.addEventListener("click", () => decideFlag("keep"));
+
+  document.getElementById("findImage")?.addEventListener("click", async () => {
+    if (!state.selected) return;
+    state.error = "";
+    state.message = "Recherche de l’affiche…";
+    render();
+    try {
+      const found = await api(`/api/admin/events/${state.selected.id}/find-image`, { method: "POST", body: "{}" });
+      state.pendingFor = state.selected.id;
+      state.pendingImage = found.image || "";
+      state.message = "Affiche trouvée. Valide pour la retenir, ou change l’adresse.";
+    } catch (error) {
+      state.error = error.message;
+      state.message = "";
+    }
+    render();
+  });
 
   document.getElementById("refuseDraft")?.addEventListener("click", () => refuseDraft());
 
