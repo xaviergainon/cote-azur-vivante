@@ -490,17 +490,6 @@
     sport: "air",
   };
 
-  const FAMILY_PALETTE = {
-    spectacle: { light: "#F29A98", base: "#DF7776", dark: "#C85F64" },
-    musique: { light: "#8DB8EC", base: "#6E9FDF", dark: "#5686CC" },
-    cinema: { light: "#B397E5", base: "#9677D2", dark: "#7B5FBD" },
-    expo: { light: "#F0CF7A", base: "#DDB25B", dark: "#C59642" },
-    famille: { light: "#8BCBA6", base: "#68B488", dark: "#4E9A70" },
-    lecture: { light: "#9EAAE5", base: "#7F8FD4", dark: "#6878BE" },
-    table: { light: "#F1B184", base: "#E39360", dark: "#CC7447" },
-    air: { light: "#83D2CD", base: "#5CB8B2", dark: "#409D99" },
-  };
-
   function familyGlyph(kind, color) {
     if (kind === "spectacle") {
       return `<ellipse cx="17.6" cy="23.2" rx="6.2" ry="8.2" fill="#fff"/>
@@ -527,13 +516,15 @@
         <path fill="#fff" d="M16.2 29.2l5-5.2 3.1 3.1 2.5-2.7 4.8 4.8H16.2z"/>`;
     }
     if (kind === "famille") {
-      return `<circle cx="18" cy="17" r="3.2" fill="#fff"/>
-        <circle cx="30" cy="17" r="3.2" fill="#fff"/>
-        <path fill="#fff" d="M11.8 29.5v-4.4c0-3.9 2.7-6.2 6.2-6.2s6.2 2.3 6.2 6.2v4.4H11.8z"/>
-        <path fill="#fff" d="M23.8 29.5v-4.4c0-3.9 2.7-6.2 6.2-6.2s6.2 2.3 6.2 6.2v4.4H23.8z"/>
-        <circle cx="24" cy="26.2" r="5.1" fill="${color}"/>
-        <circle cx="24" cy="24.6" r="2.15" fill="#fff"/>
-        <path fill="#fff" d="M19.9 31.4v-1.2c0-2.55 1.8-4.1 4.1-4.1s4.1 1.55 4.1 4.1v1.2h-8.2z"/>`;
+      return `<circle cx="19" cy="14.6" r="2.7" fill="#fff"/>
+        <rect x="15.8" y="18.4" width="6.4" height="8.6" rx="2.6" fill="#fff"/>
+        <rect x="16.4" y="25" width="2.2" height="8.4" rx="1.1" fill="#fff"/>
+        <rect x="19.4" y="25" width="2.2" height="8.4" rx="1.1" fill="#fff"/>
+        <path d="M21.6 21.8l5.6 3.2" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>
+        <circle cx="30" cy="20.2" r="2.15" fill="#fff"/>
+        <rect x="27.4" y="23.2" width="5.2" height="6.6" rx="2.1" fill="#fff"/>
+        <rect x="27.9" y="28.2" width="1.8" height="5.2" rx=".9" fill="#fff"/>
+        <rect x="30.3" y="28.2" width="1.8" height="5.2" rx=".9" fill="#fff"/>`;
     }
     if (kind === "lecture") {
       return `<path fill="#fff" d="M13.8 16.4c2.5-1.2 5-1.1 7.6.3v15.2c-2.6-1.3-5.1-1.4-7.6-.2V16.4zm12.8.3c2.6-1.4 5.1-1.5 7.6-.2v15.2c-2.5-1.2-5-.9-7.6.3V16.7z"/>`;
@@ -551,26 +542,16 @@
   }
 
   function pinSvg(category, selected) {
-    const kind = FAMILIES[category] || "expo";
-    const palette = FAMILY_PALETTE[kind];
-    const color = palette.base;
-    const bubble = "M24 2C12.4 2 4 10.4 4 22c0 14.2 20 34 20 34s20-19.8 20-34C44 10.4 35.6 2 24 2z";
+    const kind = FAMILIES[category];
+    const color = catMeta(category).color;
     const ring = selected
-      ? `<path d="${bubble}" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>`
+      ? `<circle cx="24" cy="24" r="21.6" fill="none" stroke="rgba(7,22,28,.4)" stroke-width="1.2"/>
+         <circle cx="24" cy="24" r="20" fill="none" stroke="#fff" stroke-width="2.5"/>`
       : "";
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
-      <defs>
-        <linearGradient id="marker-fill" x1="8" y1="5" x2="39" y2="52" gradientUnits="userSpaceOnUse">
-          <stop stop-color="${palette.light}"/>
-          <stop offset=".58" stop-color="${palette.base}"/>
-          <stop offset="1" stop-color="${palette.dark}"/>
-        </linearGradient>
-        <clipPath id="marker-clip"><path d="${bubble}"/></clipPath>
-      </defs>
-      <path d="${bubble}" transform="translate(0 1.5)" fill="rgba(7,22,28,.24)"/>
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+      <circle cx="24" cy="26.5" r="15" fill="rgba(7,22,28,.28)"/>
       ${ring}
-      <path d="${bubble}" fill="url(#marker-fill)" stroke="rgba(7,22,28,.28)" stroke-width="1.15" stroke-linejoin="round"/>
-      <path d="M22 18L43 35L24 56L17 29z" fill="rgba(48,43,67,.1)" clip-path="url(#marker-clip)"/>
+      <circle cx="24" cy="24" r="15" fill="${color}" stroke="rgba(7,22,28,.35)" stroke-width="1.15"/>
       ${familyGlyph(kind, color)}
     </svg>`;
   }
@@ -601,8 +582,8 @@
         zIndex: selected ? 1000 : 1,
         icon: {
           url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pinSvg(event.category, selected))}`,
-          scaledSize: new google.maps.Size(selected ? 48 : 40, selected ? 60 : 50),
-          anchor: new google.maps.Point(selected ? 24 : 20, selected ? 58 : 49),
+          scaledSize: new google.maps.Size(selected ? 46 : 36, selected ? 46 : 36),
+          anchor: new google.maps.Point(selected ? 23 : 18, selected ? 23 : 18),
         },
       });
       marker.addListener("click", () => {
