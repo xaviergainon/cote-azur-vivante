@@ -630,17 +630,33 @@
     });
   }
 
+  function mapPadding() {
+    const narrow = window.matchMedia("(max-width: 979px)").matches;
+    const bar = document.querySelector(".datebar");
+    const top = bar ? Math.ceil(bar.getBoundingClientRect().bottom) + 16 : 210;
+    return narrow
+      ? { top, right: 28, bottom: 96, left: 28 }
+      : { top: 90, right: 80, bottom: 80, left: 80 };
+  }
+
+  function departmentBounds() {
+    return new google.maps.LatLngBounds(
+      { lat: 43.48, lng: 6.78 },
+      { lat: 44.34, lng: 7.58 }
+    );
+  }
+
+  function fitDepartment() {
+    if (!state.map) return;
+    state.map.fitBounds(departmentBounds(), mapPadding());
+  }
+
   function fitToEvents(events) {
     const pinned = events.filter(hasPoint);
     if (!state.map || !pinned.length) return;
     const bounds = new google.maps.LatLngBounds();
     pinned.forEach((event) => bounds.extend({ lat: Number(event.lat), lng: Number(event.lng) }));
-    const narrow = window.matchMedia("(max-width: 979px)").matches;
-    const bar = document.querySelector(".datebar");
-    const top = bar ? Math.ceil(bar.getBoundingClientRect().bottom) + 16 : 210;
-    state.map.fitBounds(bounds, narrow
-      ? { top, right: 28, bottom: 96, left: 28 }
-      : { top: 90, right: 80, bottom: 80, left: 80 });
+    state.map.fitBounds(bounds, mapPadding());
     google.maps.event.addListenerOnce(state.map, "idle", () => {
       if (state.map.getZoom() > 13) state.map.setZoom(13);
     });
@@ -717,7 +733,7 @@
       if (state.selectedId) {
         const event = data.events.find((item) => item.id === state.selectedId);
         if (event) focusPin(event);
-      } else fitToEvents(filtered());
+      } else fitDepartment();
     }
   }
 
@@ -862,10 +878,10 @@
       render();
       if (state.view === "map" && state.map) {
         google.maps.event.trigger(state.map, "resize");
-        fitToEvents(filtered());
+        fitDepartment();
       }
     });
-    document.getElementById("recenterBtn").addEventListener("click", () => fitToEvents(filtered()));
+    document.getElementById("recenterBtn").addEventListener("click", () => fitDepartment());
     document.getElementById("surpriseBtn").addEventListener("click", () => {
       const pool = filtered().filter(hasPoint);
       const events = pool.length ? pool : filtered();
@@ -891,7 +907,7 @@
       setTimeout(() => {
         if (!state.map) return;
         google.maps.event.trigger(state.map, "resize");
-        fitToEvents(filtered());
+        fitDepartment();
       }, 160);
     });
     document.addEventListener("keydown", (event) => {
@@ -935,8 +951,8 @@
   window.initAgendaMap = function initAgendaMap() {
     try {
       state.map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 43.7, lng: 7.25 },
-        zoom: 11,
+        center: { lat: 43.91, lng: 7.18 },
+        zoom: 9,
         minZoom: 8,
         maxZoom: 18,
         disableDefaultUI: true,
@@ -957,7 +973,7 @@
       state.ready = true;
       render();
       if (!els.splash.classList.contains("hide")) return;
-      fitToEvents(filtered());
+      fitDepartment();
     } catch (error) {
       console.error(error);
       showMapError("Erreur d’initialisation Google Maps. Active Maps JavaScript API pour cette clé.");
