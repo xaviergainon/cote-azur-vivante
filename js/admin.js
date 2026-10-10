@@ -625,7 +625,7 @@ function briefsForm() {
 
 function taskHint(task, missing) {
   if (task === "pilot") {
-    return "Enchaîne les passages utiles, un à la fois : sorties, doublons, fiches, affiches, horaires, puis les lieux et les réservations une fois dans la semaine, les bibliothèques et les avis une fois dans le mois. Une étape déjà faite, ou sans rien à reprendre, est sautée. Rien n’est publié. Si Pilote est actif dans Planning, lui seul part tout seul.";
+    return "Un seul passage. Il regarde la santé des sorties et lance, dans le même journal, tous les agents encore utiles : sorties, doublons, fiches, affiches, horaires, lieux, réservations, bibliothèques, avis. Une étape déjà faite, ou sans rien à reprendre, est sautée. Rien n’est publié. Si Pilote est actif dans Planning, lui seul part tout seul.";
   }
   if (task === "images") {
     return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, 24 recherches au plus, par groupes de huit. Le suivant reprend la suite.`;
