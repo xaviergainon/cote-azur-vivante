@@ -1019,7 +1019,6 @@
       const button = event.target.closest("[data-cat]");
       if (!button) return;
       setIntent(button.dataset.cat);
-      closeSheet();
     });
     els.freeToggle.addEventListener("click", () => {
       state.freeOnly = !state.freeOnly;
@@ -1053,7 +1052,6 @@
       state.intent = "all";
       state.selectedId = null;
       render();
-      closeSheet();
     });
     els.list.addEventListener("click", onCardClick);
     els.calEvents.addEventListener("click", onCardClick);
