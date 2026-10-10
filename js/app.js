@@ -492,10 +492,16 @@
 
   function familyGlyph(kind, color) {
     if (kind === "spectacle") {
-      return `<path fill="#fff" d="M24 14.4c-5.1 0-8.4 3-8.4 7.1 0 2.3.9 4.1 1.9 5.4.4 2.2.2 4.4 1.9 4.4 1 0 1.4-1.2 1.8-2.6.4 1.3 1.1 2.6 2.2 2.6s1.8-1.3 2.2-2.6c.4 1.4.8 2.6 1.8 2.6 1.7 0 1.5-2.2 1.9-4.4 1-1.3 1.9-3.1 1.9-5.4 0-4.1-3.3-7.1-8.4-7.1z"/>
-        <circle cx="20.6" cy="20.6" r="1.25" fill="${color}"/>
-        <circle cx="27.4" cy="20.6" r="1.25" fill="${color}"/>
-        <path d="M21 25.2c.8.8 1.8 1.2 3 1.2s2.2-.4 3-1.2" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round"/>`;
+      return `<ellipse cx="17.6" cy="23.2" rx="6.2" ry="8.2" fill="#fff"/>
+        <path d="M13.4 18.4h8.2" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+        <ellipse cx="15.5" cy="21.5" rx="1.55" ry="1.9" fill="${color}"/>
+        <ellipse cx="19.9" cy="21.5" rx="1.55" ry="1.9" fill="${color}"/>
+        <path fill="${color}" d="M14.6 27.4c.55-2 1.7-3 3-3s2.45 1 3 3c-.55-1.15-1.6-1.75-3-1.75s-2.45.6-3 1.75z"/>
+        <ellipse cx="30.5" cy="24.2" rx="6.4" ry="8.3" fill="#fff"/>
+        <path d="M26.2 19.2h8.4" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+        <ellipse cx="28.3" cy="22.3" rx="1.6" ry="1.95" fill="${color}"/>
+        <ellipse cx="32.7" cy="22.3" rx="1.6" ry="1.95" fill="${color}"/>
+        <path fill="${color}" d="M27.2 26.5c.5 2.3 1.85 3.6 3.3 3.6s2.8-1.3 3.3-3.6c-.5 1.25-1.75 1.9-3.3 1.9s-2.8-.65-3.3-1.9z"/>`;
     }
     if (kind === "musique") {
       return `<path fill="#fff" d="M31 14.2v11.6a3.2 3.2 0 1 1-2-2.9V17l-8 2.1v8.6a3.2 3.2 0 1 1-2-2.9V17.4l12-3.2z"/>`;
