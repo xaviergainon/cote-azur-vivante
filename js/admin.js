@@ -11,6 +11,7 @@ const CATEGORIES = [
   ["expo", "Expo / marché"],
   ["soiree", "Soirée"],
   ["gastronomie", "Gastronomie"],
+  ["lecture", "Bibliothèque"],
 ];
 
 const state = {
@@ -232,12 +233,13 @@ function keysView() {
 }
 
 function sourcesView() {
+  const kinds = { agenda: "Agenda", library: "Bibliothèque", reviews: "Avis" };
   const items = state.sources
     .map(
       (source) => `
       <article class="item">
         <strong>${esc(source.name)}</strong>
-        <span class="meta">${esc(source.url)}</span>
+        <span class="meta">${esc(kinds[source.kind] || "Agenda")} · ${esc(source.url)}</span>
         <div class="row">
           <button class="ghost" type="button" data-toggle="${esc(source.id)}" data-enabled="${source.enabled ? "0" : "1"}">${source.enabled ? "Désactiver" : "Activer"}</button>
           <button class="danger" type="button" data-delete-source="${esc(source.id)}">Supprimer</button>
@@ -248,10 +250,17 @@ function sourcesView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Sources</h2>
-      <p class="hint">L’agent lit ces pages publiques. Un site qui ne s’affiche qu’en JavaScript donne souvent un texte vide : pointe alors l’URL vers l’agenda HTML.</p>
+      <p class="hint">L’agenda est lu chaque jour. Les bibliothèques une fois par mois. Les pages d’avis servent seulement au passage des notes, et peuvent recouper les autres.</p>
       <form id="sourceForm" class="grid">
         ${field("name", "Nom", "")}
         ${field("url", "URL", "", 'placeholder="https://"')}
+        <label>Usage
+          <select name="kind">
+            <option value="agenda">Agenda du jour</option>
+            <option value="library">Bibliothèques, une fois par mois</option>
+            <option value="reviews">Avis</option>
+          </select>
+        </label>
         <button class="primary" type="submit">Ajouter</button>
       </form>
       <div class="row"><button class="ghost" type="button" id="resetSources">Restaurer les sources par défaut</button></div>
@@ -266,25 +275,30 @@ function agentView() {
   const when = schedule.nextRun
     ? new Date(schedule.nextRun).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })
     : "";
-  const kind = run?.trigger_name === "schedule" ? "quotidien" : "manuel";
+  const runKinds = { schedule: "quotidien", library: "bibliothèques", ratings: "avis", manual: "manuel" };
+  const kind = runKinds[run?.trigger_name] || "manuel";
   const provider = state.settings?.provider === "cursor" ? "cursor" : "gemini";
   const cursorReady = Boolean(state.settings?.cursor?.configured);
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
-  const task = state.runTask === "images" ? "images" : "discover";
+  const taskChoices = ["discover", "images", "libraries", "ratings"];
+  const task = taskChoices.includes(state.runTask) ? state.runTask : "discover";
   const missing = Number(state.missingImages || 0);
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Agent quotidien</h2>
-      <p class="hint">Chaque jour, à l’heure de Paris, la collecte lit les sources activées sur 30 jours. Les événements arrivent en brouillon. Rien n’est publié sans toi.</p>
+      <p class="hint">Chaque jour, à l’heure de Paris, la collecte lit les agendas sur 30 jours. Les bibliothèques et les avis ont leur passage à part, une fois par mois. Les nouveautés restent en brouillon.</p>
       <form id="scheduleForm" class="stack">
         <label class="check"><input type="checkbox" name="enabled" ${schedule.enabled ? "checked" : ""}> Collecte automatique</label>
         <div class="grid">
           <label>Heure (Paris)<input name="time" type="time" value="${esc(schedule.time)}" required></label>
         </div>
-        <label>Recherches, une par ligne
+        <label>Recherches du jour, une par ligne
           <textarea name="queries">${esc((schedule.queries || []).join("\n"))}</textarea>
+        </label>
+        <label>Recherches bibliothèques, une par mois
+          <textarea name="libraryQueries">${esc((schedule.libraryQueries || []).join("\n"))}</textarea>
         </label>
         <p class="hint">Prochaine collecte : ${esc(when)}</p>
         <p class="error">${esc(state.error)}</p>
@@ -307,21 +321,41 @@ function agentView() {
         <select id="runTask">
           <option value="discover" ${task === "discover" ? "selected" : ""}>Découvrir des sorties</option>
           <option value="images" ${task === "images" ? "selected" : ""}>Compléter les affiches manquantes</option>
+          <option value="libraries" ${task === "libraries" ? "selected" : ""}>Bibliothèques du mois</option>
+          <option value="ratings" ${task === "ratings" ? "selected" : ""}>Chercher des avis</option>
         </select>
       </label>
       <div class="grid">
-        <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}" ${task === "images" ? "disabled" : ""}></label>
-        <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}" ${task === "images" ? "disabled" : ""}></label>
+        <label>Début<input id="windowMin" type="date" value="${esc(windowMin)}" ${task === "discover" || task === "libraries" ? "" : "disabled"}></label>
+        <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}" ${task === "discover" || task === "libraries" ? "" : "disabled"}></label>
       </div>
-      <p class="hint">${task === "images"
-        ? `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage ouvre jusqu’à 80 pages propres, les plus anciennes d’abord, puis continue au lancement suivant. Une page qui sert à plusieurs sorties n’est pas réutilisée. L’adresse proposée se valide ensuite à la main.`
-        : "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les jours déjà parcourus sont relus après les jours neufs."}</p>
+      <p class="hint">${taskHint(task, missing)}</p>
       <div class="row">
-        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : task === "images" ? "Compléter les affiches" : "Lancer maintenant"}</button>
+        <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : taskButton(task)}</button>
       </div>
       <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
+}
+
+function taskHint(task, missing) {
+  if (task === "images") {
+    return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage ouvre jusqu’à 80 pages propres, les plus anciennes d’abord. Une page qui sert à plusieurs sorties n’est pas réutilisée.`;
+  }
+  if (task === "libraries") {
+    return "Une fois par mois, hors de la collecte du jour. Le passage retient les jours d’ouverture et cherche l’affiche de chaque lieu. Les nouveaux restent en brouillon.";
+  }
+  if (task === "ratings") {
+    return "Une fois par mois, à part. Douze sorties au plus, les plus anciennes d’abord. Une note sur 5 n’est gardée que si au moins 8 avis parlent du bon lieu. Sinon elle est écartée.";
+  }
+  return "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les bibliothèques et les avis ne sont pas relus ici.";
+}
+
+function taskButton(task) {
+  if (task === "images") return "Compléter les affiches";
+  if (task === "libraries") return "Relever les bibliothèques";
+  if (task === "ratings") return "Chercher des avis";
+  return "Lancer maintenant";
 }
 
 const EVENT_PAGE_SIZE = 20;
@@ -345,7 +379,9 @@ function eventForm() {
   const actions = draft
     ? `<button class="primary" type="submit">Valider</button><button class="danger" type="button" id="refuseDraft">Refuser</button>`
     : `<button class="primary" type="submit">Enregistrer</button>`;
+  const rating = ratingLine(event);
   return `
+    ${rating}
     <form id="eventForm" class="stack">
       ${field("title", "Titre", event.title, "required")}
       <div class="grid">
@@ -365,6 +401,16 @@ function eventForm() {
       <label class="check"><input type="checkbox" name="free" ${event.free ? "checked" : ""}> Entrée gratuite</label>
       <div class="row">${actions}</div>
     </form>`;
+}
+
+function ratingLine(event) {
+  if (event.rating) {
+    const score = Number(event.rating.score).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `<p class="hint">Note publique : ${score} / 5 · ${esc(event.rating.source)} · ${event.rating.count} avis</p>`;
+  }
+  if (event.ratingStatus === "discarded") return `<p class="hint">Avis écarté : ${esc(event.ratingNote || "pas assez d’éléments.")}</p>`;
+  if (event.ratingNote) return `<p class="hint">Avis non retenu : ${esc(event.ratingNote)}</p>`;
+  return "";
 }
 
 function daysLabel(days) {
@@ -838,7 +884,8 @@ function bindApp() {
       const maxDay = document.getElementById("windowMax")?.value || defaults.max;
       state.windowMin = minDay;
       state.windowMax = maxDay;
-      const task = document.getElementById("runTask")?.value === "images" ? "images" : "discover";
+      const picked = document.getElementById("runTask")?.value;
+      const task = ["images", "libraries", "ratings"].includes(picked) ? picked : "discover";
       state.runTask = task;
       await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;

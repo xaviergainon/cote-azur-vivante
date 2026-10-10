@@ -40,6 +40,12 @@ Choix faits pour l’agent interne, sans les redemander.
 - Le thème suit le réglage du client (`prefers-color-scheme`) : papier clair ou nuit, carte comprise. Pas de bouton dans l’application.
 - L’illustration vient de l’affiche de la page de l’événement (`og:image`). Une page qui liste plusieurs sorties ne partage pas son image de site. Une image trop petite, un logo, une bannière ou une icône est écarté. S’il n’y a pas d’affiche propre à la sortie, aucune image n’est proposée. Le passage « affiches manquantes » concerne les brouillons et les sorties publiées, 80 pages propres au plus. Il reprend ensuite les pages les plus anciennes, pour avancer dans la file au lieu de réouvrir toujours les mêmes. « Depuis le début » efface cette mémoire. Sur une fiche, « Chercher l’affiche » fait la même chose pour une seule sortie et n’enregistre rien tant que tu ne valides pas. Elle reste en proposition tant que l’admin ne la retient pas. Sur la carte, la fiche et l’admin, le cadre est le même 16:9, recadré au centre. Le bandeau de la carte en montre un carré.
 
+## Bibliothèques et avis
+
+- Les bibliothèques et médiathèques sont une rubrique à part, catégorie Bibliothèque. Le passage mensuel lit leurs pages et leurs recherches, puis retient les jours d’ouverture du mois. Il ne fait pas partie de la collecte du matin. Les nouveaux lieux restent en brouillon. L’affiche est cherchée sur la page du lieu, jamais partagée entre plusieurs adresses.
+- Les avis sont une autre compétence, lancée à part, une fois par mois, sur douze sorties au plus. Elle peut s’appuyer sur Google et sur des pages d’avis choisies dans Sources, les mêmes ou d’autres. Une note sur 5 n’est publiée que si elle vise le bon lieu et compte au moins 8 avis. Sinon elle est écartée, et une note déjà juste n’est pas effacée par un passage trop mince.
+- Plus tard, une note laissée dans l’application comptera avec celle du web : le web pèse au plus comme 40 avis, chaque note de l’application pèse 1. Cinq notes de lecteurs peuvent s’afficher seules. En dessous, sans note web retenue, rien n’est montré.
+
 ## Rapport et courriel
 
 - L’admin s’ouvre sur un rapport : volumes, brouillons, publiés, affiches, types, villes, et le calendrier d’hier aux 30 jours suivants.

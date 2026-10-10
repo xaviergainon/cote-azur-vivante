@@ -76,7 +76,7 @@
   }
 
   const today = parisToday();
-  const QUICK_INTENTS = ["theatre", "concert", "cinema", "famille", "expo"];
+  const QUICK_INTENTS = ["theatre", "concert", "cinema", "famille", "expo", "lecture"];
   const state = {
     day: data.meta.days.includes(today) ? today : data.meta.days[0] || today,
     span: "week",
@@ -383,6 +383,12 @@
     return `<img class="shot" src="${src}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`;
   }
 
+  function ratingHtml(event) {
+    if (!event.rating) return "";
+    const score = Number(event.rating.score).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `<span class="rating">${score}<span>/5</span></span>`;
+  }
+
   function cardHtml(event) {
     const meta = catMeta(event.category);
     const active = event.id === state.selectedId ? " active" : "";
@@ -393,7 +399,8 @@
         <h3>${escapeHtml(event.title)}</h3>
         <p class="meta">${escapeHtml(event.venue)} · ${escapeHtml(event.city)}</p>
       </button>
-      <div class="row">
+        <div class="row">
+        ${ratingHtml(event)}
         <span class="price${event.free ? " free" : ""}">${escapeHtml(event.price)}</span>
         <button type="button" class="mini" data-export="${escapeHtml(event.id)}">Agenda</button>
       </div>
@@ -530,6 +537,7 @@
     els.rideBody.innerHTML = `
       ${shotHtml(event)}
       <p class="ride-kicker" style="color:${meta.color}">${escapeHtml(meta.label)} · ${escapeHtml(event.time || "horaire libre")}</p>
+      ${event.rating ? `<p class="rating-line">${ratingHtml(event)} · ${escapeHtml(event.rating.source || "")}</p>` : ""}
       <h3>${escapeHtml(event.title)}</h3>
       <p class="where">${escapeHtml(event.venue)}${event.city ? ` · ${escapeHtml(event.city)}` : ""}</p>
       <p class="desc">${escapeHtml(event.description)}</p>
