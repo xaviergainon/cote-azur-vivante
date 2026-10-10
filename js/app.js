@@ -90,9 +90,9 @@
   const state = {
     day: data.meta.days.includes(today) ? today : data.meta.days[0] || today,
     span: "week",
-    intent: "all",
+    intents: [],
     daysOpen: false,
-    city: "all",
+    cities: [],
     freeOnly: false,
     query: "",
     selectedId: null,
@@ -205,8 +205,8 @@
   function passes(event, day) {
     const days = day === null ? null : day ? [day] : activeDays();
     if (days && !days.some((item) => event.days.includes(item))) return false;
-    if (state.city !== "all" && event.city !== state.city) return false;
-    if (state.intent && state.intent !== "all" && event.category !== state.intent) return false;
+    if (state.cities.length && !state.cities.includes(event.city)) return false;
+    if (state.intents.length && !state.intents.includes(event.category)) return false;
     if (state.freeOnly && !event.free) return false;
     if (state.query) {
       const blob = [event.title, event.city, event.venue, event.description, event.category, catMeta(event.category).label]
@@ -233,28 +233,39 @@
   }
 
   function citiesInView() {
-    const saved = state.city;
-    state.city = "all";
+    const saved = state.cities;
+    state.cities = [];
     const cities = [...new Set(filtered().map((event) => event.city))].filter(Boolean);
-    state.city = saved;
+    state.cities = saved;
+    for (const city of saved) {
+      if (city && !cities.includes(city)) cities.push(city);
+    }
     return cities.sort((a, b) => a.localeCompare(b, "fr"));
   }
 
   function countForIntent(key) {
-    const saved = state.intent;
-    state.intent = key;
+    const saved = state.intents;
+    state.intents = key === "all" ? [] : [key];
     const total = filtered().length;
-    state.intent = saved;
+    state.intents = saved;
     return total;
   }
 
   function filterCount() {
-    let n = 0;
-    if (state.city !== "all") n += 1;
+    let n = state.cities.length + state.intents.length;
     if (state.freeOnly) n += 1;
     if (state.query) n += 1;
-    if (state.intent && state.intent !== "all") n += 1;
     return n;
+  }
+
+  function intentPhrase() {
+    if (!state.intents.length) return "";
+    if (state.intents.length === 1) return catMeta(state.intents[0]).label;
+    return state.intents.map((key) => catMeta(key).label).join(", ");
+  }
+
+  function toggleListed(list, value) {
+    return list.includes(value) ? list.filter((item) => item !== value) : list.concat(value);
   }
 
   function toast(message) {
@@ -388,12 +399,15 @@
 
   function renderIntents() {
     const keys = QUICK_INTENTS.filter((key) => data.categories[key]);
-    if (state.intent !== "all" && !keys.includes(state.intent) && data.categories[state.intent]) keys.push(state.intent);
-    const chips = [`<button type="button" class="intent-chip${state.intent === "all" ? " on" : ""}" data-intent="all" role="tab" aria-selected="${state.intent === "all"}">Tout <em>${countForIntent("all")}</em></button>`];
+    for (const key of state.intents) {
+      if (!keys.includes(key) && data.categories[key]) keys.push(key);
+    }
+    const allOn = state.intents.length === 0;
+    const chips = [`<button type="button" class="intent-chip${allOn ? " on" : ""}" data-intent="all" aria-pressed="${allOn}">Tout <em>${countForIntent("all")}</em></button>`];
     keys.forEach((key) => {
       const meta = catMeta(key);
-      const on = state.intent === key;
-      chips.push(`<button type="button" class="intent-chip${on ? " on" : ""}" data-intent="${key}" role="tab" aria-selected="${on}"><i style="background:${meta.color}"></i>${escapeHtml(meta.label)} <em>${countForIntent(key)}</em></button>`);
+      const on = state.intents.includes(key);
+      chips.push(`<button type="button" class="intent-chip${on ? " on" : ""}" data-intent="${key}" aria-pressed="${on}"><i style="background:${meta.color}"></i>${escapeHtml(meta.label)} <em>${countForIntent(key)}</em></button>`);
     });
     chips.push(`<button type="button" class="intent-chip more" data-intent="more">Autres</button>`);
     els.intentRow.innerHTML = chips.join("");
@@ -403,7 +417,7 @@
     const single = state.span === "day";
     els.dayRail.hidden = !single;
     if (!single) {
-      const intent = state.intent !== "all" ? catMeta(state.intent).label : "";
+      const intent = intentPhrase();
       els.whenLabel.textContent = intent ? `${intent} · ${spanTitle()}` : spanTitle();
       return;
     }
@@ -426,13 +440,14 @@
       })
       .join("");
     els.dayRail.scrollLeft = left;
-    const intent = state.intent !== "all" ? `${catMeta(state.intent).label} · ` : "";
+    const intent = intentPhrase() ? `${intentPhrase()} · ` : "";
     els.whenLabel.textContent = `${intent}${state.day === today ? "Aujourd’hui" : dayParts(state.day).long}`;
   }
 
   function renderActiveFilters() {
     const chips = [];
-    if (state.city !== "all") chips.push(`<button type="button" class="kill" data-clear="city">${escapeHtml(state.city)} ×</button>`);
+    for (const key of state.intents) chips.push(`<button type="button" class="kill" data-clear="intent" data-value="${escapeHtml(key)}">${escapeHtml(catMeta(key).label)} ×</button>`);
+    for (const city of state.cities) chips.push(`<button type="button" class="kill" data-clear="city" data-value="${escapeHtml(city)}">${escapeHtml(city)} ×</button>`);
     if (state.freeOnly) chips.push(`<button type="button" class="kill" data-clear="free">Gratuit ×</button>`);
     if (state.query) chips.push(`<button type="button" class="kill" data-clear="query">« ${escapeHtml(state.query)} » ×</button>`);
     els.activeFilters.innerHTML = chips.join("");
@@ -443,21 +458,24 @@
 
   function renderCities() {
     const cities = citiesInView();
-    if (state.city !== "all" && !cities.includes(state.city)) state.city = "all";
+    const allCities = state.cities.length === 0;
     els.cityRail.innerHTML =
-      `<button type="button" class="city-chip${state.city === "all" ? " active" : ""}" data-city="all">Tout le 06</button>` +
+      `<button type="button" class="city-chip${allCities ? " active" : ""}" data-city="all" aria-pressed="${allCities}">Tout le 06</button>` +
       cities
-        .map((city) => `<button type="button" class="city-chip${state.city === city ? " active" : ""}" data-city="${escapeHtml(city)}">${escapeHtml(city)}</button>`)
+        .map((city) => {
+          const on = state.cities.includes(city);
+          return `<button type="button" class="city-chip${on ? " active" : ""}" data-city="${escapeHtml(city)}" aria-pressed="${on}">${escapeHtml(city)}</button>`;
+        })
         .join("");
   }
 
   function renderFilters() {
-    const allOn = state.intent === "all";
-    els.filters.innerHTML = `<button type="button" class="chip${allOn ? " active" : " dim"}" data-cat="all">Tout voir</button>` +
+    const allOn = state.intents.length === 0;
+    els.filters.innerHTML = `<button type="button" class="chip${allOn ? " active" : " dim"}" data-cat="all" aria-pressed="${allOn}">Tout voir</button>` +
       Object.entries(data.categories)
       .map(([key, meta]) => {
-        const on = state.intent === key;
-        return `<button type="button" class="chip${on ? " active" : " dim"}" data-cat="${key}" style="--cat:${meta.color}"><span style="color:${meta.color}">●</span> ${escapeHtml(meta.label)}</button>`;
+        const on = state.intents.includes(key);
+        return `<button type="button" class="chip${on ? " active" : " dim"}" data-cat="${key}" aria-pressed="${on}" style="--cat:${meta.color}"><span style="color:${meta.color}">●</span> ${escapeHtml(meta.label)}</button>`;
       })
       .join("");
     els.freeToggle.classList.toggle("on", state.freeOnly);
@@ -911,7 +929,7 @@
   }
 
   function setIntent(intent) {
-    state.intent = !intent || intent === "all" || state.intent === intent ? "all" : intent;
+    state.intents = !intent || intent === "all" ? [] : toggleListed(state.intents, intent);
     state.selectedId = null;
     render();
     if (state.view === "map") fitToEvents(filtered());
@@ -1010,7 +1028,7 @@
     els.cityRail.addEventListener("click", (event) => {
       const button = event.target.closest("[data-city]");
       if (!button) return;
-      state.city = button.dataset.city;
+      state.cities = button.dataset.city === "all" ? [] : toggleListed(state.cities, button.dataset.city);
       state.selectedId = null;
       render();
       if (state.view === "map") fitToEvents(filtered());
@@ -1032,24 +1050,24 @@
     els.activeFilters.addEventListener("click", (event) => {
       const button = event.target.closest("[data-clear]");
       if (!button) return;
-      if (button.dataset.clear === "city") state.city = "all";
+      if (button.dataset.clear === "city") state.cities = state.cities.filter((city) => city !== button.dataset.value);
       if (button.dataset.clear === "free") state.freeOnly = false;
       if (button.dataset.clear === "query") {
         state.query = "";
         els.search.value = "";
       }
-      if (button.dataset.clear === "intent") state.intent = "all";
+      if (button.dataset.clear === "intent") state.intents = state.intents.filter((key) => key !== button.dataset.value);
       render();
     });
     document.getElementById("filterBtn").addEventListener("click", openSheet);
     document.getElementById("closeSheet").addEventListener("click", closeSheet);
     els.backdrop.addEventListener("click", closeSheet);
     document.getElementById("resetFilters").addEventListener("click", () => {
-      state.city = "all";
+      state.cities = [];
       state.freeOnly = false;
       state.query = "";
       els.search.value = "";
-      state.intent = "all";
+      state.intents = [];
       state.selectedId = null;
       render();
     });
