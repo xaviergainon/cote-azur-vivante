@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f4f8f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#07161c" media="(prefers-color-scheme: dark)" />
-    <title>CÃ´te d'Azur Vivante â€” Agenda carte Alpes-Maritimes</title>
+    <title>Côte d'Azur Vivante — Agenda carte Alpes-Maritimes</title>
     <meta
       name="description"
       content="Carte, liste et calendrier des spectacles, festivals et sorties dans les Alpes-Maritimes."
@@ -27,7 +27,7 @@
       <div class="brand-mark" aria-hidden="true">06</div>
       <div class="search-pill">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="search" type="search" placeholder="Une piÃ¨ce, un concert, un lieuâ€¦" autocomplete="off" enterkeyhint="search" aria-label="Rechercher" />
+        <input id="search" type="search" placeholder="Une pièce, un concert, un lieu…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher" />
         <button type="button" class="filter-btn" id="filterBtn" aria-label="Ouvrir les filtres">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span class="badge-count" id="filterBadge" hidden>0</span>
@@ -41,7 +41,7 @@
         <span id="stats"></span>
         <button type="button" class="text-btn" id="daysToggle" aria-expanded="false">Jours</button>
       </div>
-      <div class="span-row" id="spanRow" role="tablist" aria-label="PÃ©riode"></div>
+      <div class="span-row" id="spanRow" role="tablist" aria-label="Période"></div>
       <div class="intent-row" id="intentRow" role="tablist" aria-label="Envie"></div>
       <div class="timeline" id="dayRail" role="tablist" aria-label="Un jour" hidden></div>
       <div class="active-filters" id="activeFilters"></div>
@@ -56,7 +56,7 @@
 
     <article class="ride" id="ride" hidden>
       <div class="ride-bar" aria-hidden="true"></div>
-      <button type="button" class="ride-close" id="rideClose" aria-label="Fermer">Ã—</button>
+      <button type="button" class="ride-close" id="rideClose" aria-label="Fermer">×</button>
       <div id="rideBody"></div>
     </article>
 
@@ -72,9 +72,9 @@
     <section class="page" id="viewCal" hidden>
       <div class="page-inner cal-wrap">
         <div class="cal-nav">
-          <button type="button" class="icon-btn" id="calPrev" aria-label="Mois prÃ©cÃ©dent">â€¹</button>
+          <button type="button" class="icon-btn" id="calPrev" aria-label="Mois précédent">‹</button>
           <h2 id="calTitle"></h2>
-          <button type="button" class="icon-btn" id="calNext" aria-label="Mois suivant">â€º</button>
+          <button type="button" class="icon-btn" id="calNext" aria-label="Mois suivant">›</button>
         </div>
         <div class="cal-weekdays" aria-hidden="true">
           <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
@@ -125,10 +125,10 @@
     <div class="splash" id="splash">
       <div class="splash-inner">
         <div>
-          <p class="splash-kicker">CÃ´te dâ€™Azur Vivante</p>
+          <p class="splash-kicker">Côte d’Azur Vivante</p>
           <p class="splash-season" id="splashSeason">Alpes-Maritimes</p>
-          <h1>Ã€ lâ€™affiche</h1>
-          <p class="splash-line">ThÃ©Ã¢tre, musique, danse, cinÃ©ma, expositions, art et culture.</p>
+          <h1>À l’affiche</h1>
+          <p class="splash-line">Théâtre, musique, danse, cinéma, expositions, art et culture.</p>
         </div>
         <div class="splash-foot">
           <div class="splash-bill" id="splashBill" hidden>
