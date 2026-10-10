@@ -516,10 +516,15 @@
         <path fill="#fff" d="M16.2 29.2l5-5.2 3.1 3.1 2.5-2.7 4.8 4.8H16.2z"/>`;
     }
     if (kind === "famille") {
-      return `<circle cx="19.2" cy="17.4" r="2.7" fill="#fff"/>
-        <path fill="#fff" d="M13.6 30.4c.5-4.1 2.9-6.2 5.6-6.2s5.1 2.1 5.6 6.2H13.6z"/>
-        <circle cx="28.6" cy="19.2" r="2.15" fill="#fff"/>
-        <path fill="#fff" d="M24.4 30.4c.45-3.2 2.2-4.9 4.2-4.9s3.75 1.7 4.2 4.9h-8.4z"/>`;
+      return `<circle cx="19" cy="14.6" r="2.7" fill="#fff"/>
+        <rect x="15.8" y="18.4" width="6.4" height="8.6" rx="2.6" fill="#fff"/>
+        <rect x="16.4" y="25" width="2.2" height="8.4" rx="1.1" fill="#fff"/>
+        <rect x="19.4" y="25" width="2.2" height="8.4" rx="1.1" fill="#fff"/>
+        <path d="M21.6 21.8l5.6 3.2" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>
+        <circle cx="30" cy="20.2" r="2.15" fill="#fff"/>
+        <rect x="27.4" y="23.2" width="5.2" height="6.6" rx="2.1" fill="#fff"/>
+        <rect x="27.9" y="28.2" width="1.8" height="5.2" rx=".9" fill="#fff"/>
+        <rect x="30.3" y="28.2" width="1.8" height="5.2" rx=".9" fill="#fff"/>`;
     }
     if (kind === "lecture") {
       return `<path fill="#fff" d="M13.8 16.4c2.5-1.2 5-1.1 7.6.3v15.2c-2.6-1.3-5.1-1.4-7.6-.2V16.4zm12.8.3c2.6-1.4 5.1-1.5 7.6-.2v15.2c-2.5-1.2-5-.9-7.6.3V16.7z"/>`;
