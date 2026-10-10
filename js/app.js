@@ -971,6 +971,10 @@
     const picks = data.events
       .filter((event) => (event.days || []).some((day) => days.has(day)))
       .filter((event) => {
+        const city = String(event.city || "").trim();
+        return city && city !== "Alpes-Maritimes";
+      })
+      .filter((event) => {
         const key = String(event.title || "").trim().toLowerCase();
         if (!key || seen.has(key)) return false;
         seen.add(key);
