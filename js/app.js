@@ -462,7 +462,7 @@
     </div>`;
   }
 
-  function cardHtml(event, rank = 0) {
+  function cardHtml(event) {
     const meta = catMeta(event.category);
     const open = event.id === state.selectedId;
     const time = String(event.time || "").trim();
@@ -470,7 +470,7 @@
     return `<article class="card${open ? " active" : ""}" style="--cat:${meta.color}">
       ${shotHtml(event)}
       <button type="button" class="card-open" data-id="${escapeHtml(event.id)}" aria-expanded="${folded ? "true" : "false"}">
-        <div class="card-top"><span class="badge">${escapeHtml(meta.label)}</span>${rank ? `<span class="rank">${rank}</span>` : ""}</div>
+        <div class="card-top"><span class="badge">${escapeHtml(meta.label)}</span></div>
         <h3>${escapeHtml(event.title)}</h3>
         <p class="meta">${escapeHtml(event.venue)} · ${escapeHtml(event.city)}</p>
         ${time ? `<p class="when">${escapeHtml(time)}</p>` : ""}
@@ -548,7 +548,6 @@
     for (const key of state.intents) chips.push(`<button type="button" class="kill" data-clear="intent" data-value="${escapeHtml(key)}">${escapeHtml(catMeta(key).label)} ×</button>`);
     for (const city of state.cities) chips.push(`<button type="button" class="kill" data-clear="city" data-value="${escapeHtml(city)}">${escapeHtml(city)} ×</button>`);
     if (state.freeOnly) chips.push(`<button type="button" class="kill" data-clear="free">Gratuit ×</button>`);
-    if (state.byRating) chips.push(`<button type="button" class="kill" data-clear="rating">Classement par avis ×</button>`);
     if (state.query) chips.push(`<button type="button" class="kill" data-clear="query">« ${escapeHtml(state.query)} » ×</button>`);
     els.activeFilters.innerHTML = chips.join("");
     const n = filterCount();
@@ -584,17 +583,9 @@
     els.ratingToggle.setAttribute("aria-pressed", String(state.byRating));
   }
 
-  function rankedCards(events) {
-    let place = 0;
-    return events.map((event) => {
-      const rank = state.byRating && scoreOf(event) != null ? ++place : 0;
-      return cardHtml(event, rank);
-    }).join("");
-  }
-
   function renderList(target, events) {
     target.innerHTML = events.length
-      ? rankedCards(events)
+      ? events.map((event) => cardHtml(event)).join("")
       : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
   }
 
@@ -753,13 +744,8 @@
       return;
     }
     if (state.byRating) {
-      const rated = events.filter((event) => scoreOf(event) != null);
-      const rest = events.filter((event) => scoreOf(event) == null);
-      const blocks = [];
-      if (rated.length) blocks.push(`<h3 class="day-head">Classement par avis</h3>${rated.map((event, index) => cardHtml(event, index + 1)).join("")}`);
-      else blocks.push(`<p class="rank-empty">Aucune note d’avis sur cette période.</p>`);
-      if (rest.length) blocks.push(`<h3 class="day-head">Sans note</h3>${rest.map((event) => cardHtml(event)).join("")}`);
-      target.innerHTML = blocks.join("");
+      const rated = events.some((event) => scoreOf(event) != null);
+      target.innerHTML = `${rated ? "" : `<p class="rank-empty">Aucune note d’avis sur cette période.</p>`}${events.map((event) => cardHtml(event)).join("")}`;
       if (kept) placeAdSlots(target, kept);
       return;
     }
@@ -1092,7 +1078,7 @@
     const events = filtered();
     const label = `${events.length} sortie${events.length > 1 ? "s" : ""}`;
     els.stats.textContent = label;
-    els.listStats.textContent = state.byRating ? `${label} · ${spanTitle()} · classement par avis` : `${label} · ${spanTitle()}`;
+    els.listStats.textContent = `${label} · ${spanTitle()}`;
     renderSpans();
     renderIntents();
     renderTimeline();
@@ -1180,7 +1166,6 @@
       if (!button) return;
       if (button.dataset.clear === "city") state.cities = state.cities.filter((city) => city !== button.dataset.value);
       if (button.dataset.clear === "free") state.freeOnly = false;
-      if (button.dataset.clear === "rating") state.byRating = false;
       if (button.dataset.clear === "query") {
         state.query = "";
         els.search.value = "";
