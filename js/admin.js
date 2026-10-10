@@ -480,7 +480,7 @@ function agentView() {
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
-  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"];
+  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"];
   const task = taskChoices.includes(state.runTask) ? state.runTask : "discover";
   const missing = Number(state.missingImages || 0);
   return `
@@ -521,6 +521,7 @@ function agentView() {
           <option value="times" ${task === "times" ? "selected" : ""}>Compléter les horaires</option>
           <option value="venues" ${task === "venues" ? "selected" : ""}>Relever les lieux culturels</option>
           <option value="bookings" ${task === "bookings" ? "selected" : ""}>Trouver les réservations</option>
+          <option value="details" ${task === "details" ? "selected" : ""}>Compléter les fiches incomplètes</option>
         </select>
       </label>
       <div class="grid">
@@ -641,6 +642,9 @@ function taskHint(task, missing) {
   if (task === "bookings") {
     return "Six lieux déjà validés, puis six sorties à venir, Alpes-Maritimes et Monaco, avec le moteur choisi au-dessus. Chaque page reste une proposition tant qu’elle n’est pas acceptée dans Réservations.";
   }
+  if (task === "details") {
+    return "Huit sorties des 30 jours, d’abord celles jamais vérifiées, puis les plus anciennes. Une fiche revue attend 14 jours. L’adresse manquante est déduite du point. Un lieu inconnu est proposé en brouillon, sans doublon. Le lien de réservation de la sortie est proposé dans Réservations. Les avis restent sur Chercher des avis.";
+  }
   return "Par défaut : hier et les 30 jours suivants, Alpes-Maritimes et Monaco. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les bibliothèques et les avis ne sont pas relus ici.";
 }
 
@@ -652,6 +656,7 @@ function taskButton(task) {
   if (task === "times") return "Chercher les horaires";
   if (task === "venues") return "Relever les lieux";
   if (task === "bookings") return "Chercher les réservations";
+  if (task === "details") return "Compléter les fiches";
   return "Lancer maintenant";
 }
 
@@ -1348,7 +1353,7 @@ function bindApp() {
 
   document.getElementById("runTask")?.addEventListener("change", (event) => {
     const picked = event.target.value;
-    state.runTask = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"].includes(picked) ? picked : "discover";
+    state.runTask = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
     setTimeout(() => render(), 0);
   });
 
@@ -1456,7 +1461,7 @@ function bindApp() {
       state.windowMin = minDay;
       state.windowMax = maxDay;
       const picked = document.getElementById("runTask")?.value;
-      const task = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"].includes(picked) ? picked : "discover";
+      const task = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
       state.runTask = task;
       await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;
