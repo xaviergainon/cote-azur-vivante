@@ -621,7 +621,7 @@ function briefsForm() {
 
 function taskHint(task, missing) {
   if (task === "images") {
-    return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, huit recherches au plus. Le suivant reprend la suite.`;
+    return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, 24 recherches au plus, par groupes de huit. Le suivant reprend la suite.`;
   }
   if (task === "libraries") {
     return "Une fois par mois, hors de la collecte du jour. Le passage retient les jours d’ouverture et cherche l’affiche de chaque lieu. Les nouveaux restent en brouillon.";
@@ -933,7 +933,7 @@ function reportView() {
     </section>
     <section class="panel stack" style="padding:18px">
       <h2>Affiches manquantes</h2>
-      <p class="hint">Le passage ouvre 80 sorties au plus, les plus proches d’abord. Une page propre donne son affiche. Un agenda partagé mène à la page du spectacle ; sans lien propre, huit recherches au plus. Le suivant reprend la suite. « Depuis le début » oublie les pages déjà tentées. ${report.images.noUrl ? `${report.images.noUrl} sortie(s) n’ont pas de lien : aucune affiche ne peut être cherchée.` : ""} ${report.images.sharedEvents ? `${report.images.sharedEvents} sortie(s) partagent une page d’agenda.` : ""}</p>
+      <p class="hint">Le passage ouvre 80 sorties au plus, les plus proches d’abord. Une page propre donne son affiche. Un agenda partagé mène à la page du spectacle ; sans lien propre, 24 recherches au plus, par groupes de huit. Le suivant reprend la suite. « Depuis le début » oublie les pages déjà tentées. ${report.images.noUrl ? `${report.images.noUrl} sortie(s) n’ont pas de lien : aucune affiche ne peut être cherchée.` : ""} ${report.images.sharedEvents ? `${report.images.sharedEvents} sortie(s) partagent une page d’agenda.` : ""}</p>
       <p class="hint">Dernière collecte : ${lastLine}</p>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
