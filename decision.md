@@ -32,7 +32,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 ## Carte, liste, agenda
 
-- Sur téléphone, la carte est en plein écran. Le jour se choisit sur une barre de temps qui couvre hier et les 30 jours suivants, même quand un jour n’a aucune sortie. Les filtres (ville, envie, gratuit, recherche) s’ouvrent dans un volet. La liste et le calendrier sont deux autres vues, avec la même barre.
+- Sur téléphone, la carte est en plein écran. On cherche d’abord une envie (théâtre, concert, cinéma, famille, expo) et une période : aujourd’hui, le week-end, les 7 prochains jours, ou le mois en cours. Le défaut est les 7 jours. « Un jour » ouvre la barre des jours. Les autres envies, la ville et le gratuit restent dans le volet, pour ne pas couvrir l’écran. La liste regroupe les sorties par jour. Le calendrier sert à viser une date.
 - Une carte « prochaine sortie » propose l’événement le plus proche. L’ouvrir donne l’itinéraire, l’ajout à l’agenda, et le retour sur la carte.
 - « Dans mon agenda » télécharge un fichier `.ics` (Apple, Google, Outlook) : le jour affiché depuis la carte ou la liste, le mois affiché depuis le calendrier, ou un seul événement.
 - Sur grand écran, la carte reste visible. La liste et le calendrier sont un panneau à droite. La fiche événement reste dans la colonne de gauche, au-dessus du logo Google.

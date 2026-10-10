@@ -76,9 +76,11 @@
   }
 
   const today = parisToday();
+  const QUICK_INTENTS = ["theatre", "concert", "cinema", "famille", "expo"];
   const state = {
     day: data.meta.days.includes(today) ? today : data.meta.days[0] || today,
-    categories: new Set(Object.keys(data.categories)),
+    span: "week",
+    intent: "all",
     city: "all",
     freeOnly: false,
     query: "",
@@ -94,6 +96,8 @@
 
   const els = {
     dayRail: document.getElementById("dayRail"),
+    spanRow: document.getElementById("spanRow"),
+    intentRow: document.getElementById("intentRow"),
     cityRail: document.getElementById("cityRail"),
     filters: document.getElementById("filters"),
     list: document.getElementById("list"),
@@ -120,7 +124,6 @@
     toast: document.getElementById("toast"),
     calTitle: document.getElementById("calTitle"),
     calGrid: document.getElementById("calGrid"),
-    todayJump: document.getElementById("todayJump"),
     viewList: document.getElementById("viewList"),
     viewCal: document.getElementById("viewCal"),
     sheet: document.getElementById("filterSheet"),
@@ -143,10 +146,55 @@
     return Number.isFinite(Number(event.lat)) && Number.isFinite(Number(event.lng));
   }
 
-  function passes(event, day = state.day) {
-    if (day && !event.days.includes(day)) return false;
+  function dayRange(start, count) {
+    const days = [];
+    for (let offset = 0; offset < count; offset += 1) days.push(shiftIsoDay(start, offset));
+    return days;
+  }
+
+  function weekendDays() {
+    const dow = (dayDate(today).getUTCDay() + 6) % 7;
+    if (dow <= 3) return dayRange(shiftIsoDay(today, 4 - dow), 3);
+    if (dow === 4) return dayRange(today, 3);
+    if (dow === 5) return dayRange(today, 2);
+    return [today];
+  }
+
+  function monthSpan() {
+    const start = dayDate(today);
+    const lastDate = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
+    const last = lastDate.toISOString().slice(0, 10);
+    const cap = shiftIsoDay(today, 30);
+    const end = last < cap ? last : cap;
+    const days = [];
+    for (let day = today; day <= end; day = shiftIsoDay(day, 1)) days.push(day);
+    return days;
+  }
+
+  function activeDays() {
+    if (state.span === "today") return [today];
+    if (state.span === "weekend") return weekendDays();
+    if (state.span === "month") return monthSpan();
+    if (state.span === "day") return [state.day];
+    return dayRange(today, 7);
+  }
+
+  function spanTitle() {
+    if (state.span === "today") return "Aujourd’hui";
+    if (state.span === "weekend") return "Ce week-end";
+    if (state.span === "month") {
+      const label = dayDate(today).toLocaleDateString("fr-FR", { month: "long" });
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    if (state.span === "day") return state.day === today ? "Aujourd’hui" : dayParts(state.day).long;
+    return "7 prochains jours";
+  }
+
+  function passes(event, day) {
+    const days = day === null ? null : day ? [day] : activeDays();
+    if (days && !days.some((item) => event.days.includes(item))) return false;
     if (state.city !== "all" && event.city !== state.city) return false;
-    if (!state.categories.has(event.category)) return false;
+    if (state.intent && state.intent !== "all" && event.category !== state.intent) return false;
     if (state.freeOnly && !event.free) return false;
     if (state.query) {
       const blob = [event.title, event.city, event.venue, event.description, event.category, catMeta(event.category).label]
@@ -157,8 +205,12 @@
     return true;
   }
 
-  function filtered(day = state.day) {
+  function filtered(day) {
     return data.events.filter((event) => passes(event, day)).sort((a, b) => String(a.time).localeCompare(String(b.time), "fr"));
+  }
+
+  function nextDayInView(event) {
+    return activeDays().find((day) => event.days.includes(day)) || "";
   }
 
   function timelineDays() {
@@ -168,10 +220,20 @@
     return days;
   }
 
-  function citiesForDay() {
-    return [...new Set(data.events.filter((event) => event.days.includes(state.day)).map((event) => event.city))]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, "fr"));
+  function citiesInView() {
+    const saved = state.city;
+    state.city = "all";
+    const cities = [...new Set(filtered().map((event) => event.city))].filter(Boolean);
+    state.city = saved;
+    return cities.sort((a, b) => a.localeCompare(b, "fr"));
+  }
+
+  function countForIntent(key) {
+    const saved = state.intent;
+    state.intent = key;
+    const total = filtered().length;
+    state.intent = saved;
+    return total;
   }
 
   function filterCount() {
@@ -179,7 +241,7 @@
     if (state.city !== "all") n += 1;
     if (state.freeOnly) n += 1;
     if (state.query) n += 1;
-    if (state.categories.size !== Object.keys(data.categories).length) n += 1;
+    if (state.intent && state.intent !== "all") n += 1;
     return n;
   }
 
@@ -259,8 +321,10 @@
 
   function downloadIcs(events, filename) {
     const occurrences = events.flatMap((event) => {
-      const days = state.view === "cal" ? event.days.filter((day) => sameMonth(day, state.cal)) : [state.day];
-      return days.filter((day) => event.days.includes(day)).map((day) => vevent(event, day));
+      const days = state.view === "cal"
+        ? event.days.filter((day) => sameMonth(day, state.cal))
+        : event.days.filter((day) => activeDays().includes(day));
+      return days.map((day) => vevent(event, day));
     });
     if (!occurrences.length) {
       toast("Rien à exporter avec ces filtres.");
@@ -291,7 +355,7 @@
       downloadIcs(monthEvents, `cote-azur-${stamp}.ics`);
       return;
     }
-    downloadIcs(filtered(), `cote-azur-${state.day}.ics`);
+    downloadIcs(filtered(), `cote-azur-${state.span}.ics`);
   }
 
   function shiftMonth(delta) {
@@ -340,7 +404,40 @@
     </article>`;
   }
 
+  function renderSpans() {
+    const choices = [
+      ["today", "Aujourd’hui"],
+      ["weekend", "Week-end"],
+      ["week", "7 jours"],
+      ["month", "Ce mois"],
+      ["day", "Un jour"],
+    ];
+    els.spanRow.innerHTML = choices
+      .map(([key, label]) => `<button type="button" class="span-chip${state.span === key ? " on" : ""}" data-span="${key}" role="tab" aria-selected="${state.span === key}">${label}</button>`)
+      .join("");
+  }
+
+  function renderIntents() {
+    const keys = QUICK_INTENTS.filter((key) => data.categories[key]);
+    if (state.intent !== "all" && !keys.includes(state.intent) && data.categories[state.intent]) keys.push(state.intent);
+    const chips = [`<button type="button" class="intent-chip${state.intent === "all" ? " on" : ""}" data-intent="all" role="tab" aria-selected="${state.intent === "all"}">Tout <em>${countForIntent("all")}</em></button>`];
+    keys.forEach((key) => {
+      const meta = catMeta(key);
+      const on = state.intent === key;
+      chips.push(`<button type="button" class="intent-chip${on ? " on" : ""}" data-intent="${key}" role="tab" aria-selected="${on}"><i style="background:${meta.color}"></i>${escapeHtml(meta.label)} <em>${countForIntent(key)}</em></button>`);
+    });
+    chips.push(`<button type="button" class="intent-chip more" data-intent="more">Autres</button>`);
+    els.intentRow.innerHTML = chips.join("");
+  }
+
   function renderTimeline() {
+    const single = state.span === "day";
+    els.dayRail.hidden = !single;
+    if (!single) {
+      const intent = state.intent !== "all" ? catMeta(state.intent).label : "";
+      els.whenLabel.textContent = intent ? `${intent} · ${spanTitle()}` : spanTitle();
+      return;
+    }
     const left = els.dayRail.scrollLeft;
     els.dayRail.innerHTML = timelineDays()
       .map((day) => {
@@ -360,8 +457,8 @@
       })
       .join("");
     els.dayRail.scrollLeft = left;
-    els.whenLabel.textContent = state.day === today ? `Aujourd’hui · ${dayParts(state.day).long}` : dayParts(state.day).long;
-    els.todayJump.hidden = state.day === today;
+    const intent = state.intent !== "all" ? `${catMeta(state.intent).label} · ` : "";
+    els.whenLabel.textContent = `${intent}${state.day === today ? "Aujourd’hui" : dayParts(state.day).long}`;
   }
 
   function renderActiveFilters() {
@@ -369,8 +466,8 @@
     if (state.city !== "all") chips.push(`<button type="button" class="kill" data-clear="city">${escapeHtml(state.city)} ×</button>`);
     if (state.freeOnly) chips.push(`<button type="button" class="kill" data-clear="free">Gratuit ×</button>`);
     if (state.query) chips.push(`<button type="button" class="kill" data-clear="query">« ${escapeHtml(state.query)} » ×</button>`);
-    if (state.categories.size !== Object.keys(data.categories).length) {
-      chips.push(`<button type="button" class="kill" data-clear="cats">${state.categories.size} envies ×</button>`);
+    if (state.intent && state.intent !== "all") {
+      chips.push(`<button type="button" class="kill" data-clear="intent">${escapeHtml(catMeta(state.intent).label)} ×</button>`);
     }
     els.activeFilters.innerHTML = chips.join("");
     const n = filterCount();
@@ -379,7 +476,7 @@
   }
 
   function renderCities() {
-    const cities = citiesForDay();
+    const cities = citiesInView();
     if (state.city !== "all" && !cities.includes(state.city)) state.city = "all";
     els.cityRail.innerHTML =
       `<button type="button" class="city-chip${state.city === "all" ? " active" : ""}" data-city="all">Tout le 06</button>` +
@@ -389,9 +486,11 @@
   }
 
   function renderFilters() {
-    els.filters.innerHTML = Object.entries(data.categories)
+    const allOn = state.intent === "all";
+    els.filters.innerHTML = `<button type="button" class="chip${allOn ? " active" : " dim"}" data-cat="all">Tout voir</button>` +
+      Object.entries(data.categories)
       .map(([key, meta]) => {
-        const on = state.categories.has(key);
+        const on = state.intent === key;
         return `<button type="button" class="chip${on ? " active" : " dim"}" data-cat="${key}" style="--cat:${meta.color}"><span style="color:${meta.color}">●</span> ${escapeHtml(meta.label)}</button>`;
       })
       .join("");
@@ -402,7 +501,25 @@
   function renderList(target, events) {
     target.innerHTML = events.length
       ? events.map(cardHtml).join("")
-      : `<div class="empty">Rien pour ce filtre.<br>Change de jour, ou élargis les envies.</div>`;
+      : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
+  }
+
+  function renderGrouped(target, events) {
+    const days = activeDays();
+    if (days.length < 2) {
+      renderList(target, events);
+      return;
+    }
+    const blocks = [];
+    days.forEach((day) => {
+      const items = events.filter((event) => nextDayInView(event) === day);
+      if (!items.length) return;
+      const heading = day === today ? `Aujourd’hui · ${dayParts(day).long}` : dayParts(day).long;
+      blocks.push(`<h3 class="day-head">${escapeHtml(heading)}</h3>${items.map(cardHtml).join("")}`);
+    });
+    target.innerHTML = blocks.length
+      ? blocks.join("")
+      : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
   }
 
   function minutesOf(time) {
@@ -410,31 +527,43 @@
     return clock ? clock.h * 60 + clock.min : 24 * 60;
   }
 
-  function nextUp(events) {
-    if (state.day !== today) return events[0] || null;
-    const now = new Date().getHours() * 60 + new Date().getMinutes();
-    return events.find((event) => minutesOf(event.time) >= now - 20) || events[events.length - 1] || null;
+  function soonest(events) {
+    const ranked = events
+      .map((event) => ({ event, day: nextDayInView(event) }))
+      .filter((item) => item.day)
+      .sort((a, b) => a.day.localeCompare(b.day) || minutesOf(a.event.time) - minutesOf(b.event.time));
+    if (!ranked.length) return null;
+    if (ranked[0].day === today) {
+      const now = new Date().getHours() * 60 + new Date().getMinutes();
+      const later = ranked.find((item) => item.day > today || minutesOf(item.event.time) >= now - 20);
+      if (later) return later;
+    }
+    return ranked[0];
   }
 
   function renderPeek(events) {
-    const show = state.view === "map" && !state.selectedId && events.length;
+    const pick = soonest(events);
+    const show = state.view === "map" && !state.selectedId && pick;
     els.peek.hidden = !show;
     document.body.classList.toggle("has-peek", Boolean(show));
     if (!show) return;
-    const event = nextUp(events);
+    const event = pick.event;
     const meta = catMeta(event.category);
     els.peekShot.hidden = !event.image;
     els.peekShot.innerHTML = shotHtml(event);
-    els.peekKicker.textContent = state.day === today ? "Prochaine sortie" : "À ne pas manquer";
+    els.peekKicker.textContent = state.intent !== "all"
+      ? meta.label
+      : pick.day === today ? "Prochaine sortie" : "À ne pas manquer";
     els.peekTitle.textContent = event.title;
-    els.peekMeta.textContent = `${event.time || "Horaire à confirmer"} · ${meta.label} · ${event.city}`;
+    const when = pick.day === today ? "" : `${dayParts(pick.day).dow} ${dayParts(pick.day).n} · `;
+    els.peekMeta.textContent = `${when}${event.time || "Horaire à confirmer"} · ${event.city}`;
     els.peek.dataset.id = event.id;
     els.peek.style.borderLeftColor = meta.color;
   }
 
   function renderRide() {
     const event = data.events.find((item) => item.id === state.selectedId);
-    if (!event || !passes(event, state.view === "cal" ? null : state.day)) {
+    if (!event || !passes(event, state.view === "cal" ? null : undefined)) {
       state.selectedId = null;
       els.ride.hidden = true;
       document.body.classList.remove("riding");
@@ -547,8 +676,10 @@
     const bounds = new google.maps.LatLngBounds();
     pinned.forEach((event) => bounds.extend({ lat: Number(event.lat), lng: Number(event.lng) }));
     const narrow = window.matchMedia("(max-width: 979px)").matches;
+    const bar = document.querySelector(".datebar");
+    const top = bar ? Math.ceil(bar.getBoundingClientRect().bottom) + 16 : 210;
     state.map.fitBounds(bounds, narrow
-      ? { top: 210, right: 28, bottom: 150, left: 28 }
+      ? { top, right: 28, bottom: 150, left: 28 }
       : { top: 90, right: 80, bottom: 80, left: 80 });
     google.maps.event.addListenerOnce(state.map, "idle", () => {
       if (state.map.getZoom() > 13) state.map.setZoom(13);
@@ -579,6 +710,7 @@
   }
 
   function setDay(day, fit = true) {
+    state.span = "day";
     state.day = day;
     state.selectedId = null;
     state.cal = dayDate(day);
@@ -586,6 +718,26 @@
     if (fit && state.view === "map") fitToEvents(filtered());
     const active = els.dayRail.querySelector(".active");
     if (active) active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }
+
+  function setSpan(span) {
+    state.span = span;
+    state.selectedId = null;
+    if (span === "today" || span === "week" || span === "weekend" || span === "month") state.day = today;
+    render();
+    if (state.view === "map") fitToEvents(filtered());
+  }
+
+  function setIntent(intent) {
+    state.intent = !intent || intent === "all" || state.intent === intent ? "all" : intent;
+    state.selectedId = null;
+    render();
+    if (state.view === "map") fitToEvents(filtered());
+  }
+
+  function exportOne(event) {
+    const day = nextDayInView(event) || event.days[0];
+    downloadIcs([{ ...event, days: day ? [day] : event.days }], `sortie-${event.id}.ics`);
   }
 
   function setView(view) {
@@ -623,12 +775,14 @@
     const events = filtered();
     const label = `${events.length} sortie${events.length > 1 ? "s" : ""}`;
     els.stats.textContent = label;
-    els.listStats.textContent = `${label} · ${dayParts(state.day).long}`;
+    els.listStats.textContent = `${label} · ${spanTitle()}`;
+    renderSpans();
+    renderIntents();
     renderTimeline();
     renderActiveFilters();
     renderCities();
     renderFilters();
-    renderList(els.list, events);
+    renderGrouped(els.list, events);
     renderCalendar();
     renderMarkers(events);
     renderRide();
@@ -637,6 +791,7 @@
     if (datebar && getComputedStyle(datebar).display !== "none") {
       const bottom = Math.ceil(datebar.getBoundingClientRect().bottom);
       document.documentElement.style.setProperty("--list-top", `${bottom + 16}px`);
+      document.documentElement.style.setProperty("--panel-bottom", `${bottom + 12}px`);
     }
   }
 
@@ -644,7 +799,7 @@
     const exp = event.target.closest("[data-export]");
     if (exp) {
       const item = data.events.find((entry) => entry.id === exp.dataset.export);
-      if (item) downloadIcs([item], `sortie-${item.id}.ics`);
+      if (item) exportOne(item);
       return;
     }
     const opener = event.target.closest("[data-id]");
@@ -653,12 +808,25 @@
   }
 
   function bindUi() {
+    els.spanRow.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-span]");
+      if (!button) return;
+      setSpan(button.dataset.span);
+    });
+    els.intentRow.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-intent]");
+      if (!button) return;
+      if (button.dataset.intent === "more") {
+        openSheet();
+        return;
+      }
+      setIntent(button.dataset.intent);
+    });
     els.dayRail.addEventListener("click", (event) => {
       const button = event.target.closest("[data-day]");
       if (!button) return;
       setDay(button.dataset.day, true);
     });
-    els.todayJump.addEventListener("click", () => setDay(today, true));
     els.cityRail.addEventListener("click", (event) => {
       const button = event.target.closest("[data-city]");
       if (!button) return;
@@ -670,13 +838,8 @@
     els.filters.addEventListener("click", (event) => {
       const button = event.target.closest("[data-cat]");
       if (!button) return;
-      const cat = button.dataset.cat;
-      if (state.categories.has(cat)) {
-        if (state.categories.size === 1) return;
-        state.categories.delete(cat);
-      } else state.categories.add(cat);
-      state.selectedId = null;
-      render();
+      setIntent(button.dataset.cat);
+      closeSheet();
     });
     els.freeToggle.addEventListener("click", () => {
       state.freeOnly = !state.freeOnly;
@@ -696,7 +859,7 @@
         state.query = "";
         els.search.value = "";
       }
-      if (button.dataset.clear === "cats") state.categories = new Set(Object.keys(data.categories));
+      if (button.dataset.clear === "intent") state.intent = "all";
       render();
     });
     document.getElementById("filterBtn").addEventListener("click", openSheet);
@@ -707,7 +870,7 @@
       state.freeOnly = false;
       state.query = "";
       els.search.value = "";
-      state.categories = new Set(Object.keys(data.categories));
+      state.intent = "all";
       state.selectedId = null;
       render();
       closeSheet();
@@ -749,7 +912,7 @@
       const exp = event.target.closest("[data-export]");
       if (exp) {
         const item = data.events.find((entry) => entry.id === exp.dataset.export);
-        if (item) downloadIcs([item], `sortie-${item.id}.ics`);
+        if (item) exportOne(item);
       }
       const mapBtn = event.target.closest("[data-map]");
       if (mapBtn) {

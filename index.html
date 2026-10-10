@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600&family=Sora:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/map.css?v=10" />
+    <link rel="stylesheet" href="css/map.css?v=11" />
   </head>
   <body data-view="map">
     <div id="map" aria-label="Carte des manifestations dans les Alpes-Maritimes"></div>
@@ -27,7 +27,7 @@
       <div class="brand-mark" aria-hidden="true">06</div>
       <div class="search-pill">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <input id="search" type="search" placeholder="Lieu, artiste, salle…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher" />
+        <input id="search" type="search" placeholder="Une pièce, un concert, un lieu…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher" />
         <button type="button" class="filter-btn" id="filterBtn" aria-label="Ouvrir les filtres">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span class="badge-count" id="filterBadge" hidden>0</span>
@@ -35,13 +35,14 @@
       </div>
     </header>
 
-    <section class="datebar" aria-label="Choisir un jour">
+    <section class="datebar" aria-label="Quoi et quand">
       <div class="when">
-        <strong id="whenLabel">Aujourd’hui</strong>
+        <strong id="whenLabel">7 prochains jours</strong>
         <span id="stats"></span>
-        <button type="button" class="text-btn" id="todayJump">Aujourd’hui</button>
       </div>
-      <div class="timeline" id="dayRail" role="tablist"></div>
+      <div class="span-row" id="spanRow" role="tablist" aria-label="Période"></div>
+      <div class="intent-row" id="intentRow" role="tablist" aria-label="Envie"></div>
+      <div class="timeline" id="dayRail" role="tablist" aria-label="Un jour" hidden></div>
       <div class="active-filters" id="activeFilters"></div>
     </section>
 
@@ -136,12 +137,12 @@
       <div class="splash-inner">
         <div class="eyebrow">Alpes-Maritimes</div>
         <h1>Où on sort&nbsp;?</h1>
-        <p>La carte en plein écran, la liste, ou le calendrier. Un geste pour le jour, un autre pour l’ajouter à ton agenda.</p>
+        <p>Dis ce que tu cherches, puis la période : aujourd’hui, le week-end, les 7 jours ou le mois.</p>
         <button type="button" class="splash-btn" id="enterBtn">Voir les sorties</button>
       </div>
     </div>
 
     <script src="js/config.js"></script>
-    <script src="js/app.js?v=11"></script>
+    <script src="js/app.js?v=12"></script>
   </body>
 </html>

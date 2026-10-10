@@ -253,6 +253,52 @@ body.riding .peek { display: none; }
   font-weight: 550;
 }
 .when #stats { color: var(--mist); font-size: 0.82rem; }
+
+.span-row, .intent-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 8px;
+}
+.span-row::-webkit-scrollbar, .intent-row::-webkit-scrollbar { display: none; }
+.span-chip, .intent-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--foam);
+}
+.span-chip.on, .intent-chip.on {
+  background: var(--teal);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+.intent-chip i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+.intent-chip em {
+  font-style: normal;
+  font-weight: 500;
+  opacity: 0.72;
+  margin-left: 4px;
+}
+.intent-chip.on em { opacity: 0.85; }
+.timeline[hidden] { display: none; }
+.day-head {
+  margin: 14px 4px 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 550;
+}
 .today-jump, .text-btn {
   margin-left: auto;
   border: 0;
@@ -715,7 +761,7 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
   .peek, .ride {
     left: 24px;
     right: auto;
-    top: calc(var(--safe-top) + 200px);
+    top: var(--panel-bottom, calc(var(--safe-top) + 240px));
     bottom: auto;
     width: min(420px, calc(100vw - 520px));
     max-height: min(460px, calc(100vh - 280px));
