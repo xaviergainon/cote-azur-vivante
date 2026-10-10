@@ -468,20 +468,29 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   width: 42px;
   height: 4px;
   border-radius: 999px;
-  margin: 0 auto 8px;
+  margin: 2px auto 20px;
   background: var(--handle);
 }
 .ride-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 36px;
-  height: 36px;
-  border: 0;
+  top: 6px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: var(--wash);
-  font-size: 1.3rem;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
   line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.ride-close::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
 }
 .ride-kicker {
   margin: 0 36px 4px 0;
