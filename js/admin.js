@@ -271,6 +271,20 @@ function keysView() {
       </form>
     </section>
     <section class="panel stack" style="padding:18px">
+      <h2>Publicité</h2>
+      <p class="hint">Coupée par défaut. Rien n’est chargé tant que c’est désactivé. Une fois activée : une mention « Publicité » toutes les 9 cartes de la liste, 3 au plus, et seulement après Accepter. Aucune sur la carte, le calendrier, ni près de Réserver.</p>
+      <form id="adsForm" class="stack">
+        <label class="check"><input type="checkbox" name="enabled" ${settings.ads?.enabled ? "checked" : ""}> Activer les publicités</label>
+        <div class="grid">
+          ${field("client", "Identifiant éditeur", settings.ads?.client || "", 'placeholder="ca-pub-…" autocomplete="off"')}
+          ${field("slot", "Emplacement", settings.ads?.slot || "", 'placeholder="chiffres du bloc" autocomplete="off" inputmode="numeric"')}
+        </div>
+        <p class="hint">${settings.ads?.live ? "Publicité en ligne sur la liste." : "Publicité coupée."} Le fichier ads.txt suit cet interrupteur.</p>
+        <p class="error">${esc(state.error)}</p>
+        <button class="primary" type="submit">Enregistrer la publicité</button>
+      </form>
+    </section>
+    <section class="panel stack" style="padding:18px">
       <h2>Mot de passe</h2>
       <form id="passwordForm" class="grid">
         ${field("current", "Actuel", "", 'type="password" autocomplete="current-password"')}
@@ -1069,6 +1083,29 @@ function bindApp() {
       render();
     });
   }
+
+  document.getElementById("adsForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.error = "";
+    state.message = "";
+    const form = event.currentTarget;
+    try {
+      state.settings.ads = await api("/api/admin/ads", {
+        method: "PUT",
+        body: JSON.stringify({
+          enabled: form.elements.enabled.checked,
+          client: form.elements.client.value,
+          slot: form.elements.slot.value,
+        }),
+      });
+      state.message = state.settings.ads.live
+        ? "Publicité activée. Elle n’apparaît que dans la liste, après accord."
+        : "Publicité coupée. Aucun script n’est chargé.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
 
   document.getElementById("passwordForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();

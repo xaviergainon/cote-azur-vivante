@@ -75,6 +75,16 @@
     };
   }
 
+  const adsConfig = data.ads?.client && data.ads?.slot ? data.ads : null;
+  let adsConsent = "";
+  try {
+    const storedConsent = localStorage.getItem("cav-ads");
+    if (storedConsent === "yes" || storedConsent === "no") adsConsent = storedConsent;
+  } catch {
+    adsConsent = "";
+  }
+  const parkedAds = [];
+
   const today = parisToday();
   const QUICK_INTENTS = ["theatre", "concert", "cinema", "famille", "expo", "lecture"];
   const state = {
@@ -413,10 +423,147 @@
       : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
   }
 
+  function detachAdSlots(target) {
+    const nodes = [...target.querySelectorAll(".ad-slot")];
+    nodes.forEach((node) => node.remove());
+    return nodes;
+  }
+
+  function adsWanted() {
+    return Boolean(adsConfig) && state.view === "list" && adsConsent === "yes";
+  }
+
+  function buildAdSlot(index) {
+    const slot = document.createElement("aside");
+    slot.className = "ad-slot";
+    slot.dataset.slot = String(index);
+    slot.innerHTML = `<p class="ad-label">Publicité</p>
+      <ins class="adsbygoogle" style="display:block;min-height:250px" data-ad-client="${escapeHtml(adsConfig.client)}" data-ad-slot="${escapeHtml(adsConfig.slot)}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+    return slot;
+  }
+
+  let adsScript = null;
+  function loadAdsScript() {
+    if (adsScript) return adsScript;
+    adsScript = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsConfig.client)}`;
+      script.crossOrigin = "anonymous";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("ads"));
+      document.head.appendChild(script);
+    });
+    return adsScript;
+  }
+
+  function activateAdSlot(slot) {
+    if (slot.dataset.pushed === "1") return;
+    slot.dataset.pushed = "1";
+    loadAdsScript().then(() => {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+        slot.dataset.pushed = "";
+      }
+    }).catch(() => {
+      slot.dataset.pushed = "";
+    });
+  }
+
+  function placeAdSlots(target, kept) {
+    if (!adsConfig) return;
+    const pool = [...kept, ...parkedAds.splice(0)];
+    if (!adsWanted()) {
+      const keep = adsConsent === "yes";
+      pool.forEach((node) => {
+        node.remove();
+        if (keep && !parkedAds.includes(node)) parkedAds.push(node);
+      });
+      syncAdsChrome();
+      return;
+    }
+    const cards = [...target.querySelectorAll(".card")];
+    const used = new Set();
+    let after = 9;
+    let index = 0;
+    while (after <= cards.length && index < 3) {
+      const card = cards[after - 1];
+      let slot = pool.find((node) => node.dataset.slot === String(index));
+      if (!slot) slot = buildAdSlot(index);
+      card.insertAdjacentElement("afterend", slot);
+      used.add(slot);
+      activateAdSlot(slot);
+      after += 9;
+      index += 1;
+    }
+    pool.forEach((node) => {
+      if (!used.has(node)) node.remove();
+    });
+    syncAdsChrome();
+  }
+
+  function ensureAdsBar() {
+    let bar = document.getElementById("adsConsent");
+    if (bar) return bar;
+    bar = document.createElement("div");
+    bar.id = "adsConsent";
+    bar.className = "ads-consent";
+    bar.hidden = true;
+    bar.innerHTML = `<p>Des publicités peuvent apparaître dans la liste. Aucun script n’est chargé avant ton choix.</p>
+      <div class="ads-actions">
+        <button type="button" data-ads="no">Refuser</button>
+        <button type="button" data-ads="yes">Accepter</button>
+      </div>`;
+    bar.addEventListener("click", (event) => {
+      const choice = event.target.closest("[data-ads]")?.dataset.ads;
+      if (choice !== "yes" && choice !== "no") return;
+      adsConsent = choice;
+      try { localStorage.setItem("cav-ads", choice); } catch { /* le choix reste pour cette visite */ }
+      render();
+    });
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  function syncAdsChrome() {
+    if (!adsConfig || state.view !== "list") {
+      const bar = document.getElementById("adsConsent");
+      if (bar) bar.hidden = true;
+      const manage = document.getElementById("adsManage");
+      if (manage) manage.hidden = true;
+      return;
+    }
+    if (!adsConsent) ensureAdsBar().hidden = false;
+    else {
+      const bar = document.getElementById("adsConsent");
+      if (bar) bar.hidden = true;
+    }
+    let manage = document.getElementById("adsManage");
+    if (!manage) {
+      manage = document.createElement("button");
+      manage.id = "adsManage";
+      manage.type = "button";
+      manage.className = "text-btn";
+      manage.textContent = "Cookies pub";
+      manage.addEventListener("click", () => {
+        adsConsent = "";
+        try { localStorage.removeItem("cav-ads"); } catch { /* ignore */ }
+        document.querySelectorAll(".ad-slot").forEach((node) => node.remove());
+        parkedAds.splice(0);
+        render();
+      });
+      document.querySelector("#viewList .page-tools")?.appendChild(manage);
+    }
+    manage.hidden = !adsConsent;
+  }
+
   function renderGrouped(target, events) {
+    const kept = target === els.list ? detachAdSlots(target) : null;
     const days = activeDays();
     if (days.length < 2) {
       renderList(target, events);
+      if (kept) placeAdSlots(target, kept);
       return;
     }
     const blocks = [];
@@ -429,6 +576,7 @@
     target.innerHTML = blocks.length
       ? blocks.join("")
       : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
+    if (kept) placeAdSlots(target, kept);
   }
 
   function renderRide() {
