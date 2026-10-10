@@ -144,7 +144,7 @@ async function refreshRuns() {
   state.missingImages = Number(data.missingImages || 0);
   state.schedule = await api("/api/admin/schedule");
   if (!data.busy) stopPoll();
-  if (state.view === "agent") render();
+  if (state.view === "agent" || state.view === "plan") render();
 }
 
 async function refreshBriefs() {
@@ -323,7 +323,17 @@ function agentView() {
   const when = schedule.nextRun
     ? new Date(schedule.nextRun).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })
     : "";
-  const runKinds = { schedule: "quotidien", library: "bibliothèques", ratings: "avis", manual: "manuel" };
+  const runKinds = {
+    schedule: "planifié, sorties",
+    library: "planifié, bibliothèques",
+    ratings: "planifié, avis",
+    images: "planifié, affiches",
+    times: "planifié, horaires",
+    duplicates: "planifié, doublons",
+    venues: "planifié, lieux",
+    bookings: "planifié, réservations",
+    manual: "manuel",
+  };
   const kind = runKinds[run?.trigger_name] || "manuel";
   const provider = state.settings?.provider === "cursor" ? "cursor" : "gemini";
   const cursorReady = Boolean(state.settings?.cursor?.configured);
@@ -335,24 +345,19 @@ function agentView() {
   const missing = Number(state.missingImages || 0);
   return `
     <section class="panel stack" style="padding:18px">
-      <h2>Agent quotidien</h2>
-      <p class="hint">Chaque jour, à l’heure de Paris, la collecte lit les agendas sur 30 jours. Les bibliothèques et les avis ont leur passage à part, une fois par mois. Les nouveautés restent en brouillon.</p>
+      <h2>Collecte</h2>
+      <p class="hint">Les heures sont dans Planning. Ici : les recherches, les consignes, et un passage lancé tout de suite. Prochaine sortie planifiée : ${esc(when)}.</p>
       <form id="scheduleForm" class="stack">
-        <label class="check"><input type="checkbox" name="enabled" ${schedule.enabled ? "checked" : ""}> Collecte automatique</label>
-        <div class="grid">
-          <label>Heure (Paris)<input name="time" type="time" value="${esc(schedule.time)}" required></label>
-        </div>
         <label>Recherches du jour, une par ligne
           <textarea name="queries">${esc((schedule.queries || []).join("\n"))}</textarea>
         </label>
-        <label>Recherches bibliothèques, une par mois
+        <label>Recherches bibliothèques
           <textarea name="libraryQueries">${esc((schedule.libraryQueries || []).join("\n"))}</textarea>
         </label>
-        <p class="hint">Prochaine collecte : ${esc(when)}</p>
         <p class="error">${esc(state.error)}</p>
         <p class="hint">${esc(state.message)}</p>
         <div class="row">
-          <button class="primary" type="submit">Enregistrer le planning</button>
+          <button class="primary" type="submit">Enregistrer les recherches</button>
           <a href="#events" id="goDrafts">Voir les brouillons</a>
         </div>
       </form>
@@ -390,6 +395,70 @@ function agentView() {
       <p class="hint">${run ? `${esc(kind)} · ${esc(runStatusLabel(run.status))} · ${/doublon\(s\) retiré/.test(run.log || "") ? `${run.updated_count || 0} fiche(s) · ${run.created_count || 0} doublon(s) retiré(s)` : `${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour`}` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
+}
+
+function readPlan(form) {
+  return (state.schedule?.tasks || []).map((task) => ({
+    ...task,
+    enabled: Boolean(form.elements[`${task.id}-enabled`]?.checked),
+    every: form.elements[`${task.id}-every`]?.value || task.every,
+    time: form.elements[`${task.id}-time`]?.value || task.time,
+    weekDay: Number(form.elements[`${task.id}-week`]?.value || task.weekDay),
+    monthDay: Number(form.elements[`${task.id}-month`]?.value || task.monthDay),
+  }));
+}
+
+function planView() {
+  const tasks = state.schedule?.tasks || [];
+  const days = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  const cards = tasks.map((task) => {
+    const week = days.map((label, index) => index
+      ? `<option value="${index}" ${Number(task.weekDay) === index ? "selected" : ""}>${label}</option>`
+      : "").join("");
+    const month = Array.from({ length: 28 }, (_, index) => {
+      const day = index + 1;
+      return `<option value="${day}" ${Number(task.monthDay) === day ? "selected" : ""}>${day}</option>`;
+    }).join("");
+    const last = task.lastAt
+      ? `${new Date(task.lastAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })} · ${runStatusLabel(task.lastStatus)}`
+      : "pas encore";
+    const next = !task.enabled
+      ? "Arrêtée"
+      : task.nextRun
+        ? `${task.done ? "Déjà faite pour cette période. Prochaine : " : "Prochaine : "}${new Date(task.nextRun).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}`
+        : "Pas de prochaine date";
+    return `<article>
+      <h3>${esc(task.label)}</h3>
+      <p class="hint">${esc(task.detail)}</p>
+      <label class="check"><input type="checkbox" name="${esc(task.id)}-enabled" ${task.enabled ? "checked" : ""}> Planifiée</label>
+      <div class="grid">
+        <label>Rythme
+          <select name="${esc(task.id)}-every">
+            <option value="day" ${task.every === "day" ? "selected" : ""}>Chaque jour</option>
+            <option value="week" ${task.every === "week" ? "selected" : ""}>Chaque semaine</option>
+            <option value="month" ${task.every === "month" ? "selected" : ""}>Chaque mois</option>
+          </select>
+        </label>
+        <label>Heure (Paris)<input name="${esc(task.id)}-time" type="time" value="${esc(task.time)}" required></label>
+        <label>Jour de la semaine
+          <select name="${esc(task.id)}-week" ${task.every === "week" ? "" : "disabled"}>${week}</select>
+        </label>
+        <label>À partir du
+          <select name="${esc(task.id)}-month" ${task.every === "month" ? "" : "disabled"}>${month}</select>
+        </label>
+      </div>
+      <p class="hint">Dernière : ${esc(last)}. ${esc(next)}.</p>
+    </article>`;
+  }).join("");
+  return `<section class="panel stack plan" style="padding:18px">
+    <h2>Planning</h2>
+    <p class="hint">Chaque agent a son heure, à Paris. Une seule tâche part à la fois. Si le jour est déjà passé, le mois la rattrape au prochain passage. Un lancement immédiat reste dans Collecte.</p>
+    <form id="planForm" class="plan">${cards}
+      <p class="error">${esc(state.error)}</p>
+      <p class="hint">${esc(state.message)}</p>
+      <button class="primary" type="submit">Enregistrer le planning</button>
+    </form>
+  </section>`;
 }
 
 function briefsForm() {
@@ -684,7 +753,7 @@ function reportView() {
   }).join("");
   const last = report.lastRun;
   const lastLine = last
-    ? `${last.trigger_name === "schedule" ? "Automatique" : "Manuel"} · ${esc(runStatusLabel(last.status))} · ${last.created_count || 0} nouveau(x) · ${last.updated_count || 0} mis à jour`
+    ? `${last.trigger_name && last.trigger_name !== "manual" ? "Planifié" : "Manuel"} · ${esc(runStatusLabel(last.status))} · ${last.created_count || 0} nouveau(x) · ${last.updated_count || 0} mis à jour`
     : "Aucune collecte.";
   const notify = report.notify || {};
   const resend = notify.resend || {};
@@ -876,6 +945,7 @@ function renderApp() {
     keys: keysView,
     sources: sourcesView,
     agent: agentView,
+    plan: planView,
     events: eventsView,
     places: placesView,
     bookings: bookingsView,
@@ -889,6 +959,7 @@ function renderApp() {
           <button type="button" data-view="keys" class="${state.view === "keys" ? "active" : ""}">Clés API</button>
           <button type="button" data-view="sources" class="${state.view === "sources" ? "active" : ""}">Sources</button>
           <button type="button" data-view="agent" class="${state.view === "agent" ? "active" : ""}">Collecte</button>
+          <button type="button" data-view="plan" class="${state.view === "plan" ? "active" : ""}">Planning</button>
           <button type="button" data-view="events" class="${state.view === "events" ? "active" : ""}">Événements</button>
           <button type="button" data-view="places" class="${state.view === "places" ? "active" : ""}">Lieux</button>
           <button type="button" data-view="bookings" class="${state.view === "bookings" ? "active" : ""}">Réservations</button>
@@ -927,6 +998,7 @@ function bindApp() {
         if (state.view === "events") await refreshEvents();
         if (state.view === "places") await refreshPlaces();
         if (state.view === "bookings") await refreshBookings();
+        if (state.view === "plan") state.schedule = await api("/api/admin/schedule");
         if (state.view === "agent") {
           await refreshSettings();
           await refreshBriefs();
@@ -1053,9 +1125,31 @@ function bindApp() {
     state.message = "";
     const form = event.currentTarget;
     const body = formBody(form);
-    body.enabled = form.elements.enabled.checked;
     try {
       state.schedule = await api("/api/admin/schedule", { method: "PUT", body: JSON.stringify(body) });
+      state.message = "Recherches enregistrées.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.getElementById("planForm")?.addEventListener("change", (event) => {
+    if (event.target.type === "checkbox" || event.target.tagName === "SELECT") {
+      state.schedule = { ...state.schedule, tasks: readPlan(event.currentTarget) };
+      render();
+    }
+  });
+
+  document.getElementById("planForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.error = "";
+    state.message = "";
+    try {
+      state.schedule = await api("/api/admin/schedule", {
+        method: "PUT",
+        body: JSON.stringify({ tasks: readPlan(event.currentTarget) }),
+      });
       state.message = "Planning enregistré.";
     } catch (error) {
       state.error = error.message;
