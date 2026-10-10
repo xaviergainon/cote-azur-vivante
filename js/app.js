@@ -340,7 +340,7 @@
       : "";
     return `<div class="fold">
       ${rating}
-      <p class="desc${desc ? "" : " missing"}">${escapeHtml(desc || "Pas de résumé pour l’instant.")}</p>
+      ${desc ? `<p class="desc">${escapeHtml(desc)}</p>` : ""}
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
         ${bookControl(event)}
@@ -660,7 +660,7 @@
       ${event.rating ? `<p class="rating-line">${ratingHtml(event)} · ${escapeHtml(event.rating.source || "")}</p>` : ""}
       <h3>${escapeHtml(event.title)}</h3>
       <p class="where">${escapeHtml(event.venue)}${event.city ? ` · ${escapeHtml(event.city)}` : ""}</p>
-      <p class="desc">${escapeHtml(event.description)}</p>
+      ${String(event.description || "").trim() ? `<p class="desc">${escapeHtml(event.description)}</p>` : ""}
       ${price ? `<span class="price-tag${event.free ? " free" : ""}">${escapeHtml(price)}</span>` : ""}
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
