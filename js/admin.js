@@ -32,6 +32,7 @@ const state = {
   busy: false,
   selected: null,
   selectedPlace: null,
+  locating: false,
   message: "",
   error: "",
   poll: null,
@@ -105,6 +106,131 @@ async function refreshPlaces() {
   if (state.selectedPlace && !state.places.some((place) => place.id === state.selectedPlace.id)) {
     state.selectedPlace = null;
   }
+}
+
+function inCulturalBox(lat, lng) {
+  return lat >= 43.4 && lat <= 44.2 && lng >= 6.5 && lng <= 7.8;
+}
+
+function geocodeQuery(address, city) {
+  const monaco = /monaco|monte[-\s]?carlo/i.test(city || "");
+  return [address, city, monaco ? "Monaco" : "Alpes-Maritimes"].filter(Boolean).join(", ");
+}
+
+let geocoderPromise;
+function mapsGeocoder() {
+  if (!geocoderPromise) {
+    geocoderPromise = new Promise((resolve, reject) => {
+      const finish = () => {
+        if (!window.google?.maps?.Geocoder) {
+          reject(new Error("Géocodage indisponible."));
+          return;
+        }
+        resolve(new google.maps.Geocoder());
+      };
+      const start = () => {
+        const key = window.MAPS_CONFIG?.googleMapsApiKey;
+        if (!key) {
+          reject(new Error("Clé Google Maps absente."));
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&language=fr&region=FR`;
+        script.onload = finish;
+        script.onerror = () => reject(new Error("Géocodage indisponible."));
+        document.head.appendChild(script);
+      };
+      if (window.google?.maps?.Geocoder) finish();
+      else if (window.MAPS_CONFIG?.googleMapsApiKey) start();
+      else {
+        const config = document.createElement("script");
+        config.src = "/js/config.js";
+        config.onload = start;
+        config.onerror = () => reject(new Error("Clé Google Maps absente."));
+        document.head.appendChild(config);
+      }
+    });
+  }
+  return geocoderPromise;
+}
+
+function geocodeOne(geocoder, place) {
+  const address = geocodeQuery(place.address, place.city);
+  if (!address) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    geocoder.geocode({ address, region: "fr" }, (results, status) => {
+      if (status !== "OK" || !results?.length) {
+        resolve(null);
+        return;
+      }
+      const hit = results.find((result) => {
+        const loc = result.geometry?.location;
+        const lat = typeof loc?.lat === "function" ? loc.lat() : Number(loc?.lat);
+        const lng = typeof loc?.lng === "function" ? loc.lng() : Number(loc?.lng);
+        return inCulturalBox(lat, lng);
+      });
+      if (!hit) {
+        resolve(null);
+        return;
+      }
+      const loc = hit.geometry.location;
+      resolve({
+        lat: typeof loc.lat === "function" ? loc.lat() : Number(loc.lat),
+        lng: typeof loc.lng === "function" ? loc.lng() : Number(loc.lng),
+      });
+    });
+  });
+}
+
+async function locateInBrowser() {
+  const geocoder = await mapsGeocoder();
+  const lists = await Promise.all([
+    api("/api/admin/places?status=draft"),
+    api("/api/admin/places?status=published"),
+  ]);
+  const missing = lists.flatMap((data) => data.places || []).filter((place) => place.lat == null || place.lng == null);
+  let placed = 0;
+  const missed = [];
+  for (const place of missing) {
+    const point = await geocodeOne(geocoder, place);
+    if (!point) {
+      missed.push(place.name);
+      continue;
+    }
+    await api(`/api/admin/places/${encodeURIComponent(place.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ ...place, lat: point.lat, lng: point.lng }),
+    });
+    placed += 1;
+  }
+  return { placed, missed };
+}
+
+async function locateMissingPlaces() {
+  if (state.locating) return;
+  state.locating = true;
+  state.error = "";
+  state.message = "Recherche des points…";
+  render();
+  try {
+    let result;
+    try {
+      result = await api("/api/admin/places/locate", { method: "POST", body: "{}" });
+    } catch (error) {
+      if (!/géocodage|Maps/i.test(error.message)) throw error;
+      result = await locateInBrowser();
+    }
+    const missed = result.missed?.length ? ` Introuvable : ${result.missed.join(", ")}.` : "";
+    state.message = `${result.placed} lieu(x) placé(s).${missed}`;
+    await refreshPlaces();
+    if (state.selectedPlace) {
+      state.selectedPlace = state.places.find((place) => place.id === state.selectedPlace.id) || state.selectedPlace;
+    }
+  } catch (error) {
+    state.error = error.message;
+  }
+  state.locating = false;
+  render();
 }
 
 async function decidePlace(decision) {
@@ -843,23 +969,33 @@ const PLACE_KINDS = [
   ["other", "Autre"],
 ];
 
+function pointLabel(place) {
+  const lat = Number(place.lat);
+  const lng = Number(place.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "sans point";
+  const fmt = (value) => value.toLocaleString("fr-FR", { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+  return `${fmt(lat)}, ${fmt(lng)}`;
+}
+
 function placesView() {
   const items = state.places
     .map((place) => {
       const kind = PLACE_KINDS.find(([key]) => key === place.kind)?.[1] || "Autre";
+      const point = pointLabel(place);
       return `<article>
         <button type="button" data-place="${esc(place.id)}"><strong>${esc(place.name)}</strong></button>
-        <span class="meta">${esc(kind)} · ${esc(place.city)}${place.address ? ` · ${esc(place.address)}` : ""}${place.hours ? ` · ${esc(place.hours)}` : ""}</span>
+        <span class="meta">${esc(kind)} · ${esc(place.city)}${place.address ? ` · ${esc(place.address)}` : ""}${place.hours ? ` · ${esc(place.hours)}` : ""} · ${esc(point)}</span>
       </article>`;
     })
     .join("");
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Lieux culturels</h2>
-      <p class="hint">Un lieu validé sert de référence : une sortie dont le nom de salle correspond, dans la même commune, reçoit l’adresse et le point s’ils manquaient. Un brouillon ne change rien sur la carte.</p>
+      <p class="hint">Un lieu validé sert de référence. S’y rendre utilise le point de la sortie, ou celui du lieu quand la sortie n’en a pas. Sans point, l’itinéraire part du nom de la salle.</p>
       <div class="row">
         <button class="ghost${state.placeFilter === "draft" ? " active" : ""}" type="button" data-place-filter="draft">Brouillons</button>
         <button class="ghost${state.placeFilter === "published" ? " active" : ""}" type="button" data-place-filter="published">Validés</button>
+        <button class="ghost" type="button" id="locatePlaces" ${state.locating ? "disabled" : ""}>Placer les lieux sans point</button>
       </div>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
@@ -883,9 +1019,10 @@ function placeForm() {
         ${field("city", "Commune", place.city, "required")}
         <label>Famille<select name="kind">${options}</select></label>
         ${field("hours", "Horaires du lieu", place.hours || "")}
-        ${field("lat", "Latitude", place.lat ?? "", 'inputmode="decimal"')}
-        ${field("lng", "Longitude", place.lng ?? "", 'inputmode="decimal"')}
       </div>
+      ${field("lat", "Latitude", place.lat ?? "", 'inputmode="decimal"')}
+      ${field("lng", "Longitude", place.lng ?? "", 'inputmode="decimal"')}
+      <p class="hint">Ces deux nombres placent le lieu. Ils servent au bouton S’y rendre quand la sortie n’a pas le sien.</p>
       ${field("address", "Adresse", place.address || "")}
       ${field("website", "Site", place.website || "")}
       <div class="row">
@@ -1369,6 +1506,7 @@ function bindApp() {
     render();
   });
 
+  document.getElementById("locatePlaces")?.addEventListener("click", () => locateMissingPlaces());
   document.getElementById("publishPlace")?.addEventListener("click", () => decidePlace("publish"));
   document.getElementById("refusePlace")?.addEventListener("click", () => decidePlace("reject"));
 
