@@ -824,7 +824,8 @@ function bindApp() {
   });
 
   document.getElementById("runTask")?.addEventListener("change", (event) => {
-    state.runTask = event.target.value === "images" ? "images" : "discover";
+    const picked = event.target.value;
+    state.runTask = ["images", "libraries", "ratings"].includes(picked) ? picked : "discover";
     render();
   });
 
