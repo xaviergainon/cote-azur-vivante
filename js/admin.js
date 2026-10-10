@@ -631,7 +631,7 @@ function taskHint(task, missing) {
     return "Une fois par mois, à part. Douze sorties au plus, les plus anciennes d’abord. Une note sur 5 n’est gardée que si au moins 8 avis parlent du bon lieu. Sinon elle est écartée.";
   }
   if (task === "duplicates") {
-    return "Réunit les fiches du même titre dans la même ville. Les dates s’ajoutent, les champs vides se complètent, le doublon est retiré. Deux villes, ou deux salles vraiment différentes, restent séparées. Les bibliothèques ne sont pas touchées.";
+    return "Réunit les fiches du même titre dans la même ville, les lieux au nom proche dans la même commune, et les pages de réservation identiques. Les dates s’ajoutent, les champs vides se complètent, le doublon est retiré. Deux villes, ou deux salles vraiment différentes, restent séparées. Les bibliothèques ne sont pas touchées.";
   }
   if (task === "times") {
     return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
