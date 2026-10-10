@@ -412,7 +412,7 @@ function briefsForm() {
 
 function taskHint(task, missing) {
   if (task === "images") {
-    return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage ouvre jusqu’à 80 pages propres, les plus anciennes d’abord. Une page qui sert à plusieurs sorties n’est pas réutilisée.`;
+    return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, huit recherches au plus. Le suivant reprend la suite.`;
   }
   if (task === "libraries") {
     return "Une fois par mois, hors de la collecte du jour. Le passage retient les jours d’ouverture et cherche l’affiche de chaque lieu. Les nouveaux restent en brouillon.";
