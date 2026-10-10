@@ -253,7 +253,7 @@ textarea { min-height: 90px; resize: vertical; }
   input, select, textarea { background: #fff; }
   .item, .event { background: rgba(255, 255, 255, 0.72); }
   .log { background: #e7f0ee; }
-  .kpi, .meter span { background: #fff; }
+  .meter span { background: #fff; }
 }
 
 .report-hero {
@@ -274,16 +274,17 @@ textarea { min-height: 90px; resize: vertical; }
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: 10px;
 }
 
 .kpi {
   display: grid;
   gap: 4px;
+  min-width: 0;
   padding: 14px;
   border-radius: 18px;
-  background: rgba(16, 42, 52, 0.92);
+  background: var(--panel);
   border: 1px solid var(--line);
 }
 
@@ -315,7 +316,7 @@ textarea { min-height: 90px; resize: vertical; }
 
 .bar-row {
   display: grid;
-  grid-template-columns: 108px 1fr 28px;
+  grid-template-columns: minmax(96px, 34%) minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   font-size: 0.82rem;
