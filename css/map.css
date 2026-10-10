@@ -597,6 +597,7 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
 
 .list { display: grid; gap: 10px; }
 .ad-slot { display: grid; gap: 6px; }
+.ad-slot[hidden] { display: none; }
 .ad-label {
   margin: 0;
   font-size: 0.68rem;
