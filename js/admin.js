@@ -385,8 +385,9 @@ function agentView() {
       <p class="hint">${taskHint(task, missing)}</p>
       <div class="row">
         <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : taskButton(task)}</button>
+        ${stopButton()}
       </div>
-      <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${/doublon\(s\) retiré/.test(run.log || "") ? `${run.updated_count || 0} fiche(s) · ${run.created_count || 0} doublon(s) retiré(s)` : `${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour`}` : "Aucune collecte."}</p>
+      <p class="hint">${run ? `${esc(kind)} · ${esc(runStatusLabel(run.status))} · ${/doublon\(s\) retiré/.test(run.log || "") ? `${run.updated_count || 0} fiche(s) · ${run.created_count || 0} doublon(s) retiré(s)` : `${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour`}` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
 }
@@ -592,6 +593,7 @@ function eventsView() {
         ${filterButton("no-point", "Sans coordonnées")}
         <button class="primary" type="button" id="publishDrafts">Publier tous les brouillons</button>
         <button class="primary" type="button" id="rescanImages" ${state.busy ? "disabled" : ""}>Chercher les affiches</button>
+        ${stopButton()}
       </div>
       ${state.filter === "shared" ? '<p class="hint">Ces sorties ont les mêmes coordonnées. Sur la carte, elles forment un anneau autour de ce point. Le lieu indiqué peut être différent, ou manquer.</p>' : ""}
       <p class="error">${esc(state.error)}</p>
@@ -682,7 +684,7 @@ function reportView() {
   }).join("");
   const last = report.lastRun;
   const lastLine = last
-    ? `${last.trigger_name === "schedule" ? "Automatique" : "Manuel"} · ${esc(last.status)} · ${last.created_count || 0} nouveau(x) · ${last.updated_count || 0} mis à jour`
+    ? `${last.trigger_name === "schedule" ? "Automatique" : "Manuel"} · ${esc(runStatusLabel(last.status))} · ${last.created_count || 0} nouveau(x) · ${last.updated_count || 0} mis à jour`
     : "Aucune collecte.";
   const notify = report.notify || {};
   const resend = notify.resend || {};
@@ -729,6 +731,7 @@ function reportView() {
       <div class="row">
         <button class="primary" type="button" id="rescanImages" ${state.busy ? "disabled" : ""}>Relancer la découverte</button>
         <button class="ghost" type="button" id="resetImages" ${state.busy ? "disabled" : ""}>Depuis le début</button>
+        ${stopButton()}
       </div>
     </section>
     <section class="panel stack" style="padding:18px">
@@ -841,6 +844,26 @@ function bookingsView() {
       <p class="hint">${esc(state.message)}</p>
       <div class="list">${items || '<p class="hint">Aucune réservation dans cette liste.</p>'}</div>
     </section>`;
+}
+
+function runStatusLabel(status) {
+  return {
+    running: "en cours",
+    queued: "en attente",
+    done: "terminé",
+    error: "erreur",
+    stopped: "interrompue",
+  }[status] || status || "";
+}
+
+function canStopRun() {
+  const run = state.runs[0];
+  const last = state.report?.lastRun;
+  return state.busy || ["running", "queued"].includes(run?.status) || ["running", "queued"].includes(last?.status);
+}
+
+function stopButton() {
+  return canStopRun() ? `<button class="danger" type="button" id="stopRun">Interrompre</button>` : "";
 }
 
 function kpi(label, value, note) {
@@ -1130,6 +1153,21 @@ function bindApp() {
     try {
       const result = await api("/api/admin/notify/test", { method: "POST", body: "{}" });
       state.message = `Rapport envoyé à ${result.to}.`;
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.getElementById("stopRun")?.addEventListener("click", async () => {
+    state.error = "";
+    state.message = "";
+    try {
+      await api("/api/admin/runs/stop", { method: "POST", body: "{}" });
+      state.message = "Interruption demandée. Ce qui est déjà enregistré reste.";
+      await refreshRuns();
+      if (state.view === "report") await refreshReport();
+      if (state.busy) startPoll();
     } catch (error) {
       state.error = error.message;
     }
