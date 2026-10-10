@@ -34,6 +34,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 - L’accueil est une couverture de saison : « À l’affiche », les disciplines, et trois sorties du week-end. Elle reste affichée à chaque ouverture. « Ouvrir le programme » entre sur la carte.
 - À l’ouverture, et avec le bouton Recadrer, la carte montre les Alpes-Maritimes, de la côte aux montagnes. Un filtre de période ou d’envie resserre ensuite le cadre sur les sorties retenues.
+- Les marqueurs sont des pastilles rondes. Le cercle garde la couleur de la catégorie. Le signe blanc dit la famille : spectacle (masque), musique (note), cinéma (clap), expo (cadre), famille (deux silhouettes), lecture (livre), table (fourchette), plein air (soleil). La pastille choisie est un peu plus grande, cerclée de blanc.
 - Sur téléphone, la carte est en plein écran. On cherche d’abord une envie (théâtre, concert, cinéma, famille, expo) et une période : aujourd’hui, le week-end, les 7 prochains jours, ou le mois en cours. Le défaut est les 7 jours. Sur la carte, ces choix sont repliés : le bouton Jours les ouvre et Réduire les referme. « Un jour » ouvre la barre des jours. Les autres envies, la ville et le gratuit restent dans le volet. La liste garde les choix ouverts et regroupe les sorties par jour. Le calendrier sert à viser une date.
 - La fiche d’une sortie propose l’itinéraire. Elle s’ouvre depuis la liste ou un marqueur.
 - Sur grand écran, la carte reste visible. La liste et le calendrier sont un panneau à droite. La fiche événement reste dans la colonne de gauche, au-dessus du logo Google.

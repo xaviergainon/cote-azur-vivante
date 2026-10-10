@@ -474,11 +474,74 @@
     renderList(els.calEvents, sameMonth(state.day, state.cal) ? dayEvents : []);
   }
 
-  function pinSvg(color, selected) {
-    const r = selected ? 16 : 13;
-    return `<svg width="36" height="46" viewBox="0 0 36 46" xmlns="http://www.w3.org/2000/svg">
-      <path fill="${color}" stroke="${selected ? "#fff" : "rgba(255,255,255,.85)"}" stroke-width="2" d="M18 2C10 2 4 8.2 4 16.2 4 27 18 44 18 44s14-17 14-27.8C32 8.2 26 2 18 2z"/>
-      <circle cx="18" cy="16" r="${r * 0.42}" fill="#07161c"/>
+  const FAMILIES = {
+    theatre: "spectacle",
+    humour: "spectacle",
+    danse: "spectacle",
+    concert: "musique",
+    soiree: "musique",
+    cinema: "cinema",
+    expo: "expo",
+    conference: "expo",
+    famille: "famille",
+    lecture: "lecture",
+    gastronomie: "table",
+    festival: "air",
+    sport: "air",
+  };
+
+  function familyGlyph(kind, color) {
+    if (kind === "spectacle") {
+      return `<path fill="#fff" d="M24 14.4c-5.1 0-8.4 3-8.4 7.1 0 2.3.9 4.1 1.9 5.4.4 2.2.2 4.4 1.9 4.4 1 0 1.4-1.2 1.8-2.6.4 1.3 1.1 2.6 2.2 2.6s1.8-1.3 2.2-2.6c.4 1.4.8 2.6 1.8 2.6 1.7 0 1.5-2.2 1.9-4.4 1-1.3 1.9-3.1 1.9-5.4 0-4.1-3.3-7.1-8.4-7.1z"/>
+        <circle cx="20.6" cy="20.6" r="1.25" fill="${color}"/>
+        <circle cx="27.4" cy="20.6" r="1.25" fill="${color}"/>
+        <path d="M21 25.2c.8.8 1.8 1.2 3 1.2s2.2-.4 3-1.2" fill="none" stroke="${color}" stroke-width="1.2" stroke-linecap="round"/>`;
+    }
+    if (kind === "musique") {
+      return `<path fill="#fff" d="M31 14.2v11.6a3.2 3.2 0 1 1-2-2.9V17l-8 2.1v8.6a3.2 3.2 0 1 1-2-2.9V17.4l12-3.2z"/>`;
+    }
+    if (kind === "cinema") {
+      return `<rect x="13.2" y="20.4" width="21.6" height="11.6" rx="1.6" fill="#fff"/>
+        <path fill="#fff" d="M13.6 20.4l2.5-5h2.8l-2.5 5h-2.8zm5.4 0l2.5-5h2.8l-2.5 5h-2.8zm5.4 0l2.5-5h2.8l-2.5 5h-2.8zm5.4 0l2.2-4.4h2.4l-1.6 4.4h-3z"/>`;
+    }
+    if (kind === "expo") {
+      return `<rect x="14.2" y="15.4" width="19.6" height="16.2" rx="2" fill="none" stroke="#fff" stroke-width="2.1"/>
+        <circle cx="19.2" cy="19.6" r="1.45" fill="#fff"/>
+        <path fill="#fff" d="M16.2 29.2l5-5.2 3.1 3.1 2.5-2.7 4.8 4.8H16.2z"/>`;
+    }
+    if (kind === "famille") {
+      return `<circle cx="19.2" cy="17.4" r="2.7" fill="#fff"/>
+        <path fill="#fff" d="M13.6 30.4c.5-4.1 2.9-6.2 5.6-6.2s5.1 2.1 5.6 6.2H13.6z"/>
+        <circle cx="28.6" cy="19.2" r="2.15" fill="#fff"/>
+        <path fill="#fff" d="M24.4 30.4c.45-3.2 2.2-4.9 4.2-4.9s3.75 1.7 4.2 4.9h-8.4z"/>`;
+    }
+    if (kind === "lecture") {
+      return `<path fill="#fff" d="M13.8 16.4c2.5-1.2 5-1.1 7.6.3v15.2c-2.6-1.3-5.1-1.4-7.6-.2V16.4zm12.8.3c2.6-1.4 5.1-1.5 7.6-.2v15.2c-2.5-1.2-5-.9-7.6.3V16.7z"/>`;
+    }
+    if (kind === "table") {
+      return `<path fill="#fff" d="M18.4 13.8h2.15v7.1h-2.15zm4.55 0h2.15v7.1h-2.15zm4.5 0H29.6v7.1h-2.15zM18.2 20.6h11.6c0 2.1-2.1 3.5-4 3.9V33h-3.6v-8.5c-1.9-.4-4-1.8-4-3.9z"/>`;
+    }
+    if (kind === "air") {
+      return `<circle cx="24" cy="24" r="4.1" fill="#fff"/>
+        <g fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round">
+          <path d="M24 13.6v3.1M24 31.3v3.1M13.6 24h3.1M31.3 24h3.1M16.6 16.6l2.2 2.2M29.2 29.2l2.2 2.2M31.4 16.6l-2.2 2.2M18.8 29.2l-2.2 2.2"/>
+        </g>`;
+    }
+    return `<circle cx="24" cy="24" r="4" fill="#fff"/>`;
+  }
+
+  function pinSvg(category, selected) {
+    const kind = FAMILIES[category];
+    const color = catMeta(category).color;
+    const ring = selected
+      ? `<circle cx="24" cy="24" r="21.6" fill="none" stroke="rgba(7,22,28,.4)" stroke-width="1.2"/>
+         <circle cx="24" cy="24" r="20" fill="none" stroke="#fff" stroke-width="2.5"/>`
+      : "";
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+      <circle cx="24" cy="26.5" r="15" fill="rgba(7,22,28,.28)"/>
+      ${ring}
+      <circle cx="24" cy="24" r="15" fill="${color}" stroke="rgba(7,22,28,.35)" stroke-width="1.15"/>
+      ${familyGlyph(kind, color)}
     </svg>`;
   }
 
@@ -500,7 +563,6 @@
     clearMarkers();
     const pinned = events.filter(hasPoint);
     pinned.forEach((event) => {
-      const meta = catMeta(event.category);
       const selected = event.id === state.selectedId;
       const marker = new google.maps.Marker({
         position: spreadPosition(event, pinned),
@@ -508,9 +570,9 @@
         title: event.title,
         zIndex: selected ? 1000 : 1,
         icon: {
-          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pinSvg(meta.color, selected))}`,
-          scaledSize: new google.maps.Size(selected ? 42 : 32, selected ? 54 : 42),
-          anchor: new google.maps.Point(selected ? 21 : 16, selected ? 52 : 40),
+          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pinSvg(event.category, selected))}`,
+          scaledSize: new google.maps.Size(selected ? 46 : 36, selected ? 46 : 36),
+          anchor: new google.maps.Point(selected ? 23 : 18, selected ? 23 : 18),
         },
       });
       marker.addListener("click", () => {
