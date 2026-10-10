@@ -9,6 +9,7 @@ Choix faits pour l’agent interne, sans les redemander.
 - Gemini 3 répond avec un budget de réflexion. L’agent demande le niveau `low`, ignore les parties « thought », et ne fixe pas `temperature` : sur ces modèles une température basse coupe la réponse.
 - Si Gemini répond « quota » ou « high demand », l’agent attend le délai indiqué (quatre essais au plus) au lieu d’abandonner la source. Les appels sont espacés de 13 secondes pour rester sous le quota gratuit de 5 requêtes par minute.
 - L’admin peut changer l’heure, couper l’automatisme, ou lancer une collecte tout de suite. Les sources, les recherches et les consignes des agents se règlent dans `/admin`, page Collecte. Les consignes d’origine restent le texte de départ. `{{jours}}`, `{{categories}}` et `{{aujourdhui}}` sont remplis au lancement.
+- Les consignes de collecte demandent l’heure de la séance (20h30, sinon vide), le nom de la salle, la commune, la rue si elle est écrite, et la page de la sortie. La consigne des horaires manquants, celle des lieux et celle des billetteries sont dans la même page. Une consigne encore égale à l’ancien texte d’origine est remplacée. Une consigne déjà modifiée à la main est gardée.
 
 ## Ce que l’agent lit
 

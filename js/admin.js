@@ -394,7 +394,7 @@ function agentView() {
 function briefsForm() {
   const labels = state.briefLabels || {};
   const briefs = state.briefs || {};
-  const order = ["discover_page", "review_page", "discover_search", "review_search", "libraries", "ratings", "venues", "bookings"];
+  const order = ["discover_page", "review_page", "discover_search", "review_search", "libraries", "ratings", "times", "venues", "bookings"];
   const fields = order.map((key) => `<label>${esc(labels[key] || key)}
         <textarea class="brief" name="${key}">${esc(briefs[key] || "")}</textarea>
       </label>`).join("");
