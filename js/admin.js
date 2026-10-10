@@ -20,13 +20,18 @@ const state = {
   settings: null,
   sources: [],
   events: [],
+  places: [],
+  bookings: [],
   filter: "draft",
+  placeFilter: "draft",
+  bookingFilter: "proposed",
   query: "",
   eventPage: 0,
   runs: [],
   schedule: null,
   busy: false,
   selected: null,
+  selectedPlace: null,
   message: "",
   error: "",
   poll: null,
@@ -92,6 +97,40 @@ async function refreshEvents() {
   if (term) params.set("q", term);
   const suffix = params.toString() ? `?${params}` : "";
   state.events = (await api(`/api/admin/events${suffix}`)).events;
+}
+
+async function refreshPlaces() {
+  const data = await api(`/api/admin/places?status=${state.placeFilter === "published" ? "published" : "draft"}`);
+  state.places = data.places || [];
+  if (state.selectedPlace && !state.places.some((place) => place.id === state.selectedPlace.id)) {
+    state.selectedPlace = null;
+  }
+}
+
+async function decidePlace(decision) {
+  const place = state.selectedPlace;
+  if (!place) return;
+  state.error = "";
+  state.message = "";
+  try {
+    const result = await api(`/api/admin/places/${encodeURIComponent(place.id)}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision }),
+    });
+    state.selectedPlace = null;
+    state.message = decision === "publish"
+      ? `Lieu validé.${result.attached ? ` ${result.attached} sortie(s) rattachée(s).` : ""}`
+      : "Lieu refusé.";
+    await refreshPlaces();
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
+async function refreshBookings() {
+  const status = ["proposed", "approved", "rejected"].includes(state.bookingFilter) ? state.bookingFilter : "proposed";
+  state.bookings = (await api(`/api/admin/bookings?status=${status}`)).bookings || [];
 }
 
 async function refreshReport() {
@@ -291,7 +330,7 @@ function agentView() {
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
-  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times"];
+  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"];
   const task = taskChoices.includes(state.runTask) ? state.runTask : "discover";
   const missing = Number(state.missingImages || 0);
   return `
@@ -335,6 +374,8 @@ function agentView() {
           <option value="ratings" ${task === "ratings" ? "selected" : ""}>Chercher des avis</option>
           <option value="duplicates" ${task === "duplicates" ? "selected" : ""}>Regrouper les doublons</option>
           <option value="times" ${task === "times" ? "selected" : ""}>Compléter les horaires</option>
+          <option value="venues" ${task === "venues" ? "selected" : ""}>Relever les lieux culturels</option>
+          <option value="bookings" ${task === "bookings" ? "selected" : ""}>Trouver les réservations</option>
         </select>
       </label>
       <div class="grid">
@@ -353,7 +394,7 @@ function agentView() {
 function briefsForm() {
   const labels = state.briefLabels || {};
   const briefs = state.briefs || {};
-  const order = ["discover_page", "review_page", "discover_search", "review_search", "libraries", "ratings"];
+  const order = ["discover_page", "review_page", "discover_search", "review_search", "libraries", "ratings", "venues", "bookings"];
   const fields = order.map((key) => `<label>${esc(labels[key] || key)}
         <textarea class="brief" name="${key}">${esc(briefs[key] || "")}</textarea>
       </label>`).join("");
@@ -384,6 +425,12 @@ function taskHint(task, missing) {
   if (task === "times") {
     return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
   }
+  if (task === "venues") {
+    return "Deux recherches, douze lieux au plus. Horaires, adresse et site si la page les donne. Chaque lieu reste en brouillon tant qu’il n’est pas validé dans Lieux.";
+  }
+  if (task === "bookings") {
+    return "Six lieux déjà validés, puis six sorties à venir, sans lien de réservation. Chaque page reste une proposition tant qu’elle n’est pas acceptée dans Réservations.";
+  }
   return "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les bibliothèques et les avis ne sont pas relus ici.";
 }
 
@@ -393,6 +440,8 @@ function taskButton(task) {
   if (task === "ratings") return "Chercher des avis";
   if (task === "duplicates") return "Regrouper les doublons";
   if (task === "times") return "Chercher les horaires";
+  if (task === "venues") return "Relever les lieux";
+  if (task === "bookings") return "Chercher les réservations";
   return "Lancer maintenant";
 }
 
@@ -469,6 +518,7 @@ function placeNote(event) {
     parts.push(`Même point que ${others} autre${others > 1 ? "s" : ""} sortie${others > 1 ? "s" : ""}. L’anneau sur la carte les écarte seulement pour qu’on puisse les voir.`);
   }
   if (!(event.address || "").trim()) parts.push("Adresse absente.");
+  if (event.placeName) parts.unshift(`Rattaché au lieu ${event.placeName}.`);
   return parts.length ? `<p class="hint">${esc(parts.join(" "))}</p>` : "";
 }
 
@@ -699,12 +749,114 @@ function reportView() {
     </section>`;
 }
 
+const PLACE_KINDS = [
+  ["theatre", "Théâtre"],
+  ["cinema", "Cinéma"],
+  ["music", "Musique"],
+  ["museum", "Musée"],
+  ["other", "Autre"],
+];
+
+function placesView() {
+  const items = state.places
+    .map((place) => {
+      const kind = PLACE_KINDS.find(([key]) => key === place.kind)?.[1] || "Autre";
+      return `<article>
+        <button type="button" data-place="${esc(place.id)}"><strong>${esc(place.name)}</strong></button>
+        <span class="meta">${esc(kind)} · ${esc(place.city)}${place.address ? ` · ${esc(place.address)}` : ""}${place.hours ? ` · ${esc(place.hours)}` : ""}</span>
+      </article>`;
+    })
+    .join("");
+  return `
+    <section class="panel stack" style="padding:18px">
+      <h2>Lieux culturels</h2>
+      <p class="hint">Un lieu validé sert de référence : une sortie dont le nom de salle correspond, dans la même commune, reçoit l’adresse et le point s’ils manquaient. Un brouillon ne change rien sur la carte.</p>
+      <div class="row">
+        <button class="ghost${state.placeFilter === "draft" ? " active" : ""}" type="button" data-place-filter="draft">Brouillons</button>
+        <button class="ghost${state.placeFilter === "published" ? " active" : ""}" type="button" data-place-filter="published">Validés</button>
+      </div>
+      <p class="error">${esc(state.error)}</p>
+      <p class="hint">${esc(state.message)}</p>
+      <div class="list">${items || '<p class="hint">Aucun lieu dans cette liste.</p>'}</div>
+      ${placeForm()}
+    </section>`;
+}
+
+function placeForm() {
+  const place = state.selectedPlace;
+  if (!place?.id) return "";
+  const options = PLACE_KINDS.map(
+    ([key, label]) => `<option value="${key}" ${place.kind === key ? "selected" : ""}>${label}</option>`
+  ).join("");
+  const draft = place.status === "draft";
+  return `
+    <form id="placeForm" class="stack">
+      <h3>${esc(place.name)}</h3>
+      <div class="grid">
+        ${field("name", "Nom", place.name, "required")}
+        ${field("city", "Commune", place.city, "required")}
+        <label>Famille<select name="kind">${options}</select></label>
+        ${field("hours", "Horaires du lieu", place.hours || "")}
+        ${field("lat", "Latitude", place.lat ?? "", 'inputmode="decimal"')}
+        ${field("lng", "Longitude", place.lng ?? "", 'inputmode="decimal"')}
+      </div>
+      ${field("address", "Adresse", place.address || "")}
+      ${field("website", "Site", place.website || "")}
+      <div class="row">
+        <button class="primary" type="submit">${draft ? "Enregistrer" : "Mettre à jour"}</button>
+        ${draft ? `<button class="primary" type="button" id="publishPlace">Valider</button><button class="danger" type="button" id="refusePlace">Refuser</button>` : ""}
+      </div>
+    </form>`;
+}
+
+function bookingsView() {
+  const items = state.bookings
+    .map((link) => {
+      const where = link.target_type === "place" ? "Lieu" : "Sortie";
+      return `<article>
+        <strong>${esc(link.name)}</strong>
+        <span class="meta">${where} · ${esc(link.target_name || link.target_id)}${link.target_city ? ` · ${esc(link.target_city)}` : ""}</span>
+        <span class="meta"><a href="${esc(link.url)}" target="_blank" rel="noopener">${esc(link.url)}</a></span>
+        ${link.note ? `<span class="meta">${esc(link.note)}</span>` : ""}
+        ${link.status === "proposed" ? `<div class="row">
+          <button class="primary" type="button" data-booking="${esc(link.id)}" data-decision="approve">Accepter</button>
+          <button class="danger" type="button" data-booking="${esc(link.id)}" data-decision="reject">Refuser</button>
+        </div>` : ""}
+      </article>`;
+    })
+    .join("");
+  const filters = [
+    ["proposed", "Propositions"],
+    ["approved", "Acceptées"],
+    ["rejected", "Refusées"],
+  ];
+  return `
+    <section class="panel stack" style="padding:18px">
+      <h2>Réservations</h2>
+      <p class="hint">Une proposition acceptée ajoute le bouton Réserver sur la sortie, ou sur les sorties du lieu. Rien n’apparaît sur la carte tant que ce n’est pas accepté.</p>
+      <div class="row">
+        ${filters.map(([key, label]) => `<button class="ghost${state.bookingFilter === key ? " active" : ""}" type="button" data-booking-filter="${key}">${label}</button>`).join("")}
+      </div>
+      <p class="error">${esc(state.error)}</p>
+      <p class="hint">${esc(state.message)}</p>
+      <div class="list">${items || '<p class="hint">Aucune réservation dans cette liste.</p>'}</div>
+    </section>`;
+}
+
 function kpi(label, value, note) {
   return `<article class="kpi"><span>${esc(label)}</span><strong>${esc(value)}</strong><em>${esc(note)}</em></article>`;
 }
 
 function renderApp() {
-  const views = { report: reportView, keys: keysView, sources: sourcesView, agent: agentView, events: eventsView };
+  const views = {
+    report: reportView,
+    keys: keysView,
+    sources: sourcesView,
+    agent: agentView,
+    events: eventsView,
+    places: placesView,
+    bookings: bookingsView,
+  };
   app.innerHTML = `
     <div class="shell">
       <aside class="side">
@@ -715,6 +867,8 @@ function renderApp() {
           <button type="button" data-view="sources" class="${state.view === "sources" ? "active" : ""}">Sources</button>
           <button type="button" data-view="agent" class="${state.view === "agent" ? "active" : ""}">Collecte</button>
           <button type="button" data-view="events" class="${state.view === "events" ? "active" : ""}">Événements</button>
+          <button type="button" data-view="places" class="${state.view === "places" ? "active" : ""}">Lieux</button>
+          <button type="button" data-view="bookings" class="${state.view === "bookings" ? "active" : ""}">Réservations</button>
         </nav>
         <a href="/">Voir la carte</a>
         <button class="ghost" type="button" id="logout">Sortir</button>
@@ -748,6 +902,8 @@ function bindApp() {
         if (state.view === "report") await refreshReport();
         if (state.view === "sources") await refreshSources();
         if (state.view === "events") await refreshEvents();
+        if (state.view === "places") await refreshPlaces();
+        if (state.view === "bookings") await refreshBookings();
         if (state.view === "agent") {
           await refreshSettings();
           await refreshBriefs();
@@ -901,7 +1057,7 @@ function bindApp() {
 
   document.getElementById("runTask")?.addEventListener("change", (event) => {
     const picked = event.target.value;
-    state.runTask = ["images", "libraries", "ratings", "duplicates", "times"].includes(picked) ? picked : "discover";
+    state.runTask = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"].includes(picked) ? picked : "discover";
     setTimeout(() => render(), 0);
   });
 
@@ -994,7 +1150,7 @@ function bindApp() {
       state.windowMin = minDay;
       state.windowMax = maxDay;
       const picked = document.getElementById("runTask")?.value;
-      const task = ["images", "libraries", "ratings", "duplicates", "times"].includes(picked) ? picked : "discover";
+      const task = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings"].includes(picked) ? picked : "discover";
       state.runTask = task;
       await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;
@@ -1004,6 +1160,75 @@ function bindApp() {
       state.error = error.message;
     }
     render();
+  });
+
+  app.querySelectorAll("[data-place-filter]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.placeFilter = button.dataset.placeFilter === "published" ? "published" : "draft";
+      state.selectedPlace = null;
+      state.error = "";
+      state.message = "";
+      await refreshPlaces();
+      render();
+    });
+  });
+
+  app.querySelectorAll("[data-place]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedPlace = state.places.find((place) => place.id === button.dataset.place) || null;
+      render();
+    });
+  });
+
+  document.getElementById("placeForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const place = state.selectedPlace;
+    if (!place) return;
+    state.error = "";
+    state.message = "";
+    try {
+      await api(`/api/admin/places/${encodeURIComponent(place.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(formBody(event.currentTarget)),
+      });
+      state.message = "Lieu enregistré.";
+      await refreshPlaces();
+      state.selectedPlace = state.places.find((item) => item.id === place.id) || null;
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.getElementById("publishPlace")?.addEventListener("click", () => decidePlace("publish"));
+  document.getElementById("refusePlace")?.addEventListener("click", () => decidePlace("reject"));
+
+  app.querySelectorAll("[data-booking-filter]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.bookingFilter = button.dataset.bookingFilter || "proposed";
+      state.error = "";
+      state.message = "";
+      await refreshBookings();
+      render();
+    });
+  });
+
+  app.querySelectorAll("[data-booking]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.error = "";
+      state.message = "";
+      try {
+        await api(`/api/admin/bookings/${encodeURIComponent(button.dataset.booking)}/decision`, {
+          method: "POST",
+          body: JSON.stringify({ decision: button.dataset.decision }),
+        });
+        state.message = button.dataset.decision === "approve" ? "Réservation acceptée." : "Réservation refusée.";
+        await refreshBookings();
+      } catch (error) {
+        state.error = error.message;
+      }
+      render();
+    });
   });
 
   document.getElementById("goDrafts")?.addEventListener("click", async (event) => {

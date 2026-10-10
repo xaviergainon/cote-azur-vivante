@@ -536,6 +536,11 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   color: var(--on-accent);
   border-color: transparent;
 }
+.ride-actions .book {
+  background: #f0a06a;
+  color: #1c140f;
+  border-color: transparent;
+}
 
 .page {
   position: absolute;

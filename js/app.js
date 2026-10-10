@@ -285,9 +285,15 @@
     return `<span class="rating">${score}<span>/5</span></span>`;
   }
 
-  function publicPrice(event) {
+  function priceText(event) {
     const price = String(event.price || "").trim();
     if (!price || /^voir la source$/i.test(price)) return "";
+    return price;
+  }
+
+  function publicPrice(event) {
+    const price = priceText(event);
+    if (!price) return "";
     return `<span class="price${event.free ? " free" : ""}">${escapeHtml(price)}</span>`;
   }
 
@@ -435,6 +441,10 @@
     const source = /^https?:\/\//i.test(event.url || "")
       ? `<a href="${escapeHtml(event.url)}" target="_blank" rel="noopener">Source</a>`
       : "";
+    const booking = /^https:\/\//i.test(event.booking?.url || "")
+      ? `<a class="book" href="${escapeHtml(event.booking.url)}" target="_blank" rel="noopener">Réserver</a>`
+      : "";
+    const price = priceText(event);
     els.rideBody.innerHTML = `
       ${shotHtml(event)}
       <p class="ride-kicker" style="color:${meta.color}">${escapeHtml(meta.label)} · ${escapeHtml(event.time || "horaire libre")}</p>
@@ -442,9 +452,10 @@
       <h3>${escapeHtml(event.title)}</h3>
       <p class="where">${escapeHtml(event.venue)}${event.city ? ` · ${escapeHtml(event.city)}` : ""}</p>
       <p class="desc">${escapeHtml(event.description)}</p>
-      <span class="price-tag${event.free ? " free" : ""}">${escapeHtml(event.price)}</span>
+      ${price ? `<span class="price-tag${event.free ? " free" : ""}">${escapeHtml(price)}</span>` : ""}
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
+        ${booking}
         ${source}
       </div>`;
     els.ride.hidden = false;
