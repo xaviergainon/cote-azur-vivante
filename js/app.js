@@ -903,7 +903,6 @@
     });
     els.enterBtn.addEventListener("click", () => {
       els.splash.classList.add("hide");
-      try { sessionStorage.setItem("cav-in", "1"); } catch (error) { /* ignore */ }
       setTimeout(() => {
         if (!state.map) return;
         google.maps.event.trigger(state.map, "resize");
@@ -1042,9 +1041,6 @@
   }
   paintCover();
   bindUi();
-  try {
-    if (sessionStorage.getItem("cav-in")) els.splash.classList.add("hide");
-  } catch (error) { /* ignore */ }
   render();
   initMap();
 })();
