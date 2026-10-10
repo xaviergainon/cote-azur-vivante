@@ -560,7 +560,6 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   color: var(--mist);
 }
 .card .book {
-  margin-left: auto;
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
@@ -663,6 +662,14 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
 .card h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 1.12rem; font-weight: 550; line-height: 1.2; }
 .card .meta { margin: 0; color: var(--mist); font-size: 0.86rem; }
 .card .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; padding: 0 14px 0 16px; }
+.card .fold {
+  display: grid;
+  gap: 8px;
+  padding: 10px 14px 2px 16px;
+}
+.card .fold .desc { margin: 0; color: var(--mist); line-height: 1.45; }
+.card .fold .desc.missing { color: var(--mist); }
+.card .fold .rating-line { margin: 0; }
 .card:not(:has(.shot)) .card-open { padding-top: 14px; }
 .price {
   border-radius: 999px;

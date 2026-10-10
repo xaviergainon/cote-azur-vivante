@@ -325,23 +325,47 @@
     return `<button type="button" class="book off" disabled>Réserver</button>`;
   }
 
+  function detailInCard() {
+    return state.view !== "map" && window.matchMedia("(max-width: 979px)").matches;
+  }
+
+  function foldHtml(event) {
+    const source = /^https?:\/\//i.test(event.url || "")
+      ? `<a href="${escapeHtml(event.url)}" target="_blank" rel="noopener">Source</a>`
+      : "";
+    const desc = String(event.description || "").trim();
+    const rating = event.rating
+      ? `<p class="rating-line">${ratingHtml(event)} · ${escapeHtml(event.rating.source || "avis")}${event.rating.count ? ` · ${event.rating.count} avis` : ""}</p>`
+      : "";
+    return `<div class="fold">
+      ${rating}
+      <p class="desc${desc ? "" : " missing"}">${escapeHtml(desc || "Pas de résumé pour l’instant.")}</p>
+      <div class="ride-actions">
+        <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
+        ${bookControl(event)}
+        ${source}
+      </div>
+    </div>`;
+  }
+
   function cardHtml(event) {
     const meta = catMeta(event.category);
-    const active = event.id === state.selectedId ? " active" : "";
+    const open = event.id === state.selectedId;
     const time = String(event.time || "").trim();
-    return `<article class="card${active}" style="--cat:${meta.color}">
+    const folded = open && detailInCard();
+    return `<article class="card${open ? " active" : ""}" style="--cat:${meta.color}">
       ${shotHtml(event)}
-      <button type="button" class="card-open" data-id="${escapeHtml(event.id)}">
+      <button type="button" class="card-open" data-id="${escapeHtml(event.id)}" aria-expanded="${folded ? "true" : "false"}">
         <div class="card-top"><span class="badge">${escapeHtml(meta.label)}</span></div>
         <h3>${escapeHtml(event.title)}</h3>
         <p class="meta">${escapeHtml(event.venue)} · ${escapeHtml(event.city)}</p>
         <p class="when${time ? "" : " missing"}">${escapeHtml(timeLabel(event))}</p>
       </button>
-        <div class="row">
+      <div class="row">
         ${ratingHtml(event)}
         ${publicPrice(event)}
-        ${bookControl(event)}
       </div>
+      ${folded ? foldHtml(event) : ""}
     </article>`;
   }
 
@@ -610,6 +634,11 @@
   }
 
   function renderRide() {
+    if (detailInCard()) {
+      els.ride.hidden = true;
+      document.body.classList.remove("riding");
+      return;
+    }
     const event = data.events.find((item) => item.id === state.selectedId);
     if (!event || !passes(event, state.view === "cal" ? null : undefined)) {
       state.selectedId = null;
@@ -839,6 +868,11 @@
     state.selectedId = id;
     const event = data.events.find((item) => item.id === id);
     render();
+    if (detailInCard()) {
+      requestAnimationFrame(() => {
+        document.querySelector(".card.active")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    }
     if (fly && event && state.view === "map") focusPin(event);
   }
 
@@ -937,6 +971,10 @@
   function onCardClick(event) {
     const opener = event.target.closest("[data-id]");
     if (!opener) return;
+    if (detailInCard() && opener.dataset.id === state.selectedId) {
+      clearSelection();
+      return;
+    }
     selectEvent(opener.dataset.id, false);
   }
 
