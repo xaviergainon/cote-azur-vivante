@@ -285,6 +285,12 @@
     return `<span class="rating">${score}<span>/5</span></span>`;
   }
 
+  function publicPrice(event) {
+    const price = String(event.price || "").trim();
+    if (!price || /^voir la source$/i.test(price)) return "";
+    return `<span class="price${event.free ? " free" : ""}">${escapeHtml(price)}</span>`;
+  }
+
   function cardHtml(event) {
     const meta = catMeta(event.category);
     const active = event.id === state.selectedId ? " active" : "";
@@ -297,7 +303,7 @@
       </button>
         <div class="row">
         ${ratingHtml(event)}
-        <span class="price${event.free ? " free" : ""}">${escapeHtml(event.price)}</span>
+        ${publicPrice(event)}
       </div>
     </article>`;
   }

@@ -291,7 +291,7 @@ function agentView() {
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
-  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates"];
+  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times"];
   const task = taskChoices.includes(state.runTask) ? state.runTask : "discover";
   const missing = Number(state.missingImages || 0);
   return `
@@ -334,6 +334,7 @@ function agentView() {
           <option value="libraries" ${task === "libraries" ? "selected" : ""}>Bibliothèques du mois</option>
           <option value="ratings" ${task === "ratings" ? "selected" : ""}>Chercher des avis</option>
           <option value="duplicates" ${task === "duplicates" ? "selected" : ""}>Regrouper les doublons</option>
+          <option value="times" ${task === "times" ? "selected" : ""}>Compléter les horaires</option>
         </select>
       </label>
       <div class="grid">
@@ -380,6 +381,9 @@ function taskHint(task, missing) {
   if (task === "duplicates") {
     return "Réunit les fiches du même titre dans la même ville. Les dates s’ajoutent, les champs vides se complètent, le doublon est retiré. Deux villes, ou deux salles vraiment différentes, restent séparées. Les bibliothèques ne sont pas touchées.";
   }
+  if (task === "times") {
+    return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
+  }
   return "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les bibliothèques et les avis ne sont pas relus ici.";
 }
 
@@ -388,6 +392,7 @@ function taskButton(task) {
   if (task === "libraries") return "Relever les bibliothèques";
   if (task === "ratings") return "Chercher des avis";
   if (task === "duplicates") return "Regrouper les doublons";
+  if (task === "times") return "Chercher les horaires";
   return "Lancer maintenant";
 }
 
@@ -896,7 +901,7 @@ function bindApp() {
 
   document.getElementById("runTask")?.addEventListener("change", (event) => {
     const picked = event.target.value;
-    state.runTask = ["images", "libraries", "ratings", "duplicates"].includes(picked) ? picked : "discover";
+    state.runTask = ["images", "libraries", "ratings", "duplicates", "times"].includes(picked) ? picked : "discover";
     setTimeout(() => render(), 0);
   });
 
@@ -989,7 +994,7 @@ function bindApp() {
       state.windowMin = minDay;
       state.windowMax = maxDay;
       const picked = document.getElementById("runTask")?.value;
-      const task = ["images", "libraries", "ratings", "duplicates"].includes(picked) ? picked : "discover";
+      const task = ["images", "libraries", "ratings", "duplicates", "times"].includes(picked) ? picked : "discover";
       state.runTask = task;
       await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;
