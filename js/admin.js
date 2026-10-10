@@ -15,7 +15,7 @@ const CATEGORIES = [
 
 const state = {
   session: null,
-  view: "keys",
+  view: "report",
   settings: null,
   sources: [],
   events: [],
@@ -80,12 +80,18 @@ async function refreshSources() {
 async function refreshEvents() {
   const query = state.filter === "images"
     ? "?image=proposed"
+    : state.filter === "noimage"
+      ? "?image=missing"
     : state.filter === "missing"
       ? "?flag=missing"
       : state.filter === "all"
         ? ""
         : `?status=${state.filter}`;
   state.events = (await api(`/api/admin/events${query}`)).events;
+}
+
+async function refreshReport() {
+  state.report = await api("/api/admin/report");
 }
 
 async function refreshRuns() {
@@ -308,7 +314,7 @@ function agentView() {
         <label>Fin<input id="windowMax" type="date" value="${esc(windowMax)}" ${task === "images" ? "disabled" : ""}></label>
       </div>
       <p class="hint">${task === "images"
-        ? `${missing} sortie(s) sans affiche. Ce passage ouvre leur lien, pas les agendas. Une page qui sert à plusieurs sorties est ignorée. 40 pages au plus. L’adresse proposée se valide ensuite à la main.`
+        ? `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage ouvre jusqu’à 80 pages propres, les plus anciennes d’abord, puis continue au lancement suivant. Une page qui sert à plusieurs sorties n’est pas réutilisée. L’adresse proposée se valide ensuite à la main.`
         : "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les jours déjà parcourus sont relus après les jours neufs."}</p>
       <div class="row">
         <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : task === "images" ? "Compléter les affiches" : "Lancer maintenant"}</button>
@@ -413,7 +419,9 @@ function eventsView() {
         <button class="ghost" type="button" data-filter="cancelled">Annulés</button>
         <button class="ghost" type="button" data-filter="all">Tous</button>
         <button class="ghost" type="button" data-filter="images">Images à valider</button>
+        <button class="ghost" type="button" data-filter="noimage">Sans affiche</button>
         <button class="primary" type="button" id="publishDrafts">Publier tous les brouillons</button>
+        <button class="primary" type="button" id="rescanImages" ${state.busy ? "disabled" : ""}>Chercher les affiches</button>
       </div>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
@@ -476,13 +484,112 @@ function imageBox() {
     </div>`;
 }
 
+function reportView() {
+  const report = state.report;
+  if (!report) return `<section class="panel stack" style="padding:18px"><h2>Rapport</h2><p class="hint">Chargement…</p></section>`;
+  const maxCategory = Math.max(1, ...report.categories.map((item) => item.total));
+  const maxCity = Math.max(1, ...report.cities.map((item) => item.total), 1);
+  const maxDay = Math.max(1, ...report.days.map((item) => item.total));
+  const categories = report.categories.map((item) => `
+    <div class="bar-row">
+      <span>${esc(item.label)}</span>
+      <i style="--w:${Math.round((item.total / maxCategory) * 100)}%;--c:${esc(item.color)}"></i>
+      <b>${item.total}</b>
+    </div>`).join("");
+  const cities = report.cities.length
+    ? report.cities.map((item) => `
+      <div class="bar-row">
+        <span>${esc(item.city)}</span>
+        <i style="--w:${Math.round((item.total / maxCity) * 100)}%"></i>
+        <b>${item.total}</b>
+      </div>`).join("")
+    : `<p class="hint">Aucune ville.</p>`;
+  const days = report.days.map((item) => {
+    const height = Math.max(4, Math.round((item.total / maxDay) * 100));
+    const label = item.day.slice(8);
+    return `<div class="day-col" title="${esc(item.day)} · ${item.total}"><i style="height:${height}%"></i><span>${label}</span></div>`;
+  }).join("");
+  const last = report.lastRun;
+  const lastLine = last
+    ? `${last.trigger_name === "schedule" ? "Automatique" : "Manuel"} · ${esc(last.status)} · ${last.created_count || 0} nouveau(x) · ${last.updated_count || 0} mis à jour`
+    : "Aucune collecte.";
+  const notify = report.notify || {};
+  const resend = notify.resend || {};
+  return `
+    <section class="report-hero panel">
+      <div>
+        <p class="eyebrow">Tableau de bord</p>
+        <h2>La base, en ce moment</h2>
+        <p class="hint">${report.images.withImage} affiche(s) sur ${report.totals.active} sorties actives. ${report.images.uncheckedPages} page(s) propre(s) n’ont encore jamais été ouvertes.</p>
+      </div>
+      <div class="meter" style="--p:${report.images.coverage}">
+        <span>${report.images.coverage}%</span>
+      </div>
+    </section>
+    <div class="kpis">
+      ${kpi("Sorties", report.totals.active, "brouillons et publiées")}
+      ${kpi("Brouillons", report.totals.draft, "à relire")}
+      ${kpi("Publiées", report.totals.published, "sur la carte")}
+      ${kpi("Sans affiche", report.images.withoutImage, `${report.images.uniquePages} pages propres`)}
+      ${kpi("À valider", report.images.proposed, "propositions")}
+      ${kpi("Gratuites", report.totals.free, "entrées libres")}
+    </div>
+    <div class="report-grid">
+      <section class="panel stack" style="padding:18px">
+        <h2>Types</h2>
+        ${categories}
+      </section>
+      <section class="panel stack" style="padding:18px">
+        <h2>Villes</h2>
+        ${cities}
+      </section>
+    </div>
+    <section class="panel stack" style="padding:18px">
+      <h2>Calendrier</h2>
+      <p class="hint">${esc(report.window.minDay)} → ${esc(report.window.maxDay)}. La hauteur est le nombre de sorties ce jour-là.</p>
+      <div class="day-chart">${days}</div>
+    </section>
+    <section class="panel stack" style="padding:18px">
+      <h2>Affiches manquantes</h2>
+      <p class="hint">Le passage ouvre les pages une par une, brouillons et publiés, 80 au plus. Le suivant reprend là où celui-ci s’est arrêté. « Depuis le début » oublie les pages déjà tentées et recommence. ${report.images.noUrl ? `${report.images.noUrl} sortie(s) n’ont pas de lien : aucune affiche ne peut être cherchée.` : ""} ${report.images.sharedEvents ? `${report.images.sharedEvents} sortie(s) partagent une page d’agenda : leur image de site n’est pas reprise.` : ""}</p>
+      <p class="hint">Dernière collecte : ${lastLine}</p>
+      <p class="error">${esc(state.error)}</p>
+      <p class="hint">${esc(state.message)}</p>
+      <div class="row">
+        <button class="primary" type="button" id="rescanImages" ${state.busy ? "disabled" : ""}>Relancer la découverte</button>
+        <button class="ghost" type="button" id="resetImages" ${state.busy ? "disabled" : ""}>Depuis le début</button>
+      </div>
+    </section>
+    <section class="panel stack" style="padding:18px">
+      <h2>Courriel</h2>
+      <p class="hint">Chaque collecte automatique envoie ce rapport à l’adresse ci-dessous. Avec le domaine d’essai Resend, le message n’arrive qu’à l’adresse du compte Resend. La clé reste chiffrée.</p>
+      <p><span class="pill ${resend.configured ? "" : "warn"}">Resend ${resend.configured ? resend.hint : "absente"}</span></p>
+      <form id="notifyForm" class="stack">
+        <div class="grid">
+          ${field("email", "Destinataire", notify.email || "")}
+          ${field("from", "Expéditeur", notify.from || "")}
+        </div>
+        ${field("resendApiKey", "Clé Resend", "", 'placeholder="re_…" autocomplete="off"')}
+        <div class="row">
+          <button class="primary" type="submit">Enregistrer</button>
+          <button class="ghost" type="button" id="sendReport">Envoyer le rapport maintenant</button>
+        </div>
+      </form>
+    </section>`;
+}
+
+function kpi(label, value, note) {
+  return `<article class="kpi"><span>${esc(label)}</span><strong>${esc(value)}</strong><em>${esc(note)}</em></article>`;
+}
+
 function renderApp() {
-  const views = { keys: keysView, sources: sourcesView, agent: agentView, events: eventsView };
+  const views = { report: reportView, keys: keysView, sources: sourcesView, agent: agentView, events: eventsView };
   app.innerHTML = `
     <div class="shell">
       <aside class="side">
         <div class="brand">Côte d'Azur Vivante</div>
         <nav class="nav">
+          <button type="button" data-view="report" class="${state.view === "report" ? "active" : ""}">Rapport</button>
           <button type="button" data-view="keys" class="${state.view === "keys" ? "active" : ""}">Clés API</button>
           <button type="button" data-view="sources" class="${state.view === "sources" ? "active" : ""}">Sources</button>
           <button type="button" data-view="agent" class="${state.view === "agent" ? "active" : ""}">Collecte</button>
@@ -517,6 +624,7 @@ function bindApp() {
       state.error = "";
       state.message = "";
       try {
+        if (state.view === "report") await refreshReport();
         if (state.view === "sources") await refreshSources();
         if (state.view === "events") await refreshEvents();
         if (state.view === "agent") {
@@ -679,6 +787,42 @@ function bindApp() {
   });
   document.getElementById("windowMax")?.addEventListener("input", (event) => {
     state.windowMax = event.target.value;
+  });
+
+  document.getElementById("rescanImages")?.addEventListener("click", () => {
+    startImageRun(false);
+  });
+
+  document.getElementById("resetImages")?.addEventListener("click", () => {
+    startImageRun(true);
+  });
+
+  document.getElementById("notifyForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.error = "";
+    state.message = "";
+    try {
+      state.report = await api("/api/admin/notify", {
+        method: "PUT",
+        body: JSON.stringify(formBody(event.currentTarget)),
+      });
+      state.message = "Notification enregistrée.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.getElementById("sendReport")?.addEventListener("click", async () => {
+    state.error = "";
+    state.message = "";
+    try {
+      const result = await api("/api/admin/notify/test", { method: "POST", body: "{}" });
+      state.message = `Rapport envoyé à ${result.to}.`;
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
   });
 
   document.getElementById("startRun")?.addEventListener("click", async () => {
@@ -883,11 +1027,29 @@ async function refuseDraft() {
   render();
 }
 
+async function startImageRun(reset) {
+  state.error = "";
+  state.message = "";
+  try {
+    if (reset) await api("/api/admin/images/reset", { method: "POST", body: "{}" });
+    await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ task: "images" }) });
+    state.view = "agent";
+    state.runTask = "images";
+    state.busy = true;
+    await refreshRuns();
+    startPoll();
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
 async function boot() {
   state.error = "";
   await refreshSession();
   if (state.session.authenticated) {
     await refreshSettings();
+    if (state.view === "report") await refreshReport();
     if (state.view === "sources") await refreshSources();
     if (state.view === "events") await refreshEvents();
     if (state.view === "agent") await refreshRuns();
