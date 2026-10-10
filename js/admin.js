@@ -777,7 +777,7 @@ function eventsView() {
           ${event.image ? `<img class="thumb" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">` : ""}
           <div>
             <strong>${esc(event.title)}</strong>
-            <div class="meta">${esc(event.city)} · ${esc(daysLabel(event.days))} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+            <div class="meta">${esc(event.city)} · ${esc(daysLabel(event.days))} · ${esc(event.time || "horaire à préciser")} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
             <div class="meta">${esc(placeMeta(event))}</div>
           </div>
         </div>
@@ -1068,7 +1068,7 @@ function bookingsView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Réservations</h2>
-      <p class="hint">Une proposition acceptée ajoute le bouton Réserver sur la sortie, ou sur les sorties du lieu. Rien n’apparaît sur la carte tant que ce n’est pas accepté.</p>
+      <p class="hint">Le bouton Réserver est toujours là. Il reste grisé tant qu’aucune proposition n’est acceptée. Une fois acceptée, il ouvre la page, pour la sortie ou pour toutes les sorties du lieu. Le lien de la sortie prime.</p>
       <div class="row">
         ${filters.map(([key, label]) => `<button class="ghost${state.bookingFilter === key ? " active" : ""}" type="button" data-booking-filter="${key}">${label}</button>`).join("")}
       </div>

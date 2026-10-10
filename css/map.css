@@ -541,6 +541,35 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   color: #1c140f;
   border-color: transparent;
 }
+.ride-actions .book.off,
+.card .book.off {
+  background: transparent;
+  color: var(--mist);
+  border-color: var(--line);
+  cursor: default;
+}
+.card .when, .ride .when {
+  margin: 6px 0 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--foam);
+}
+.ride .when { margin: 0 36px 8px 0; font-size: 1.05rem; }
+.card .when.missing, .ride .when.missing {
+  font-weight: 500;
+  color: var(--mist);
+}
+.card .book {
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: #f0a06a;
+  color: #1c140f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+}
 
 .page {
   position: absolute;
