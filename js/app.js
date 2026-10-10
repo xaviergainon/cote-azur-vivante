@@ -544,14 +544,14 @@
   function pinSvg(category, selected) {
     const kind = FAMILIES[category];
     const color = catMeta(category).color;
+    const bubble = "M24 2C12.4 2 4 10.4 4 22c0 14.2 20 34 20 34s20-19.8 20-34C44 10.4 35.6 2 24 2z";
     const ring = selected
-      ? `<circle cx="24" cy="24" r="21.6" fill="none" stroke="rgba(7,22,28,.4)" stroke-width="1.2"/>
-         <circle cx="24" cy="24" r="20" fill="none" stroke="#fff" stroke-width="2.5"/>`
+      ? `<path d="${bubble}" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>`
       : "";
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-      <circle cx="24" cy="26.5" r="15" fill="rgba(7,22,28,.28)"/>
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
+      <path d="${bubble}" transform="translate(0 1.5)" fill="rgba(7,22,28,.24)"/>
       ${ring}
-      <circle cx="24" cy="24" r="15" fill="${color}" stroke="rgba(7,22,28,.35)" stroke-width="1.15"/>
+      <path d="${bubble}" fill="${color}" stroke="rgba(7,22,28,.35)" stroke-width="1.15" stroke-linejoin="round"/>
       ${familyGlyph(kind, color)}
     </svg>`;
   }
@@ -582,8 +582,8 @@
         zIndex: selected ? 1000 : 1,
         icon: {
           url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(pinSvg(event.category, selected))}`,
-          scaledSize: new google.maps.Size(selected ? 46 : 36, selected ? 46 : 36),
-          anchor: new google.maps.Point(selected ? 23 : 18, selected ? 23 : 18),
+          scaledSize: new google.maps.Size(selected ? 48 : 40, selected ? 60 : 50),
+          anchor: new google.maps.Point(selected ? 24 : 20, selected ? 58 : 49),
         },
       });
       marker.addListener("click", () => {
