@@ -447,9 +447,10 @@
       ? `<a href="${escapeHtml(event.url)}" target="_blank" rel="noopener">Source</a>`
       : "";
     const desc = String(event.description || "").trim();
-    const rating = event.rating
-      ? `<p class="rating-line">${ratingHtml(event)} · ${escapeHtml(event.rating.source || "avis")}${event.rating.count ? ` · ${event.rating.count} avis` : ""}</p>`
-      : "";
+    const reviewBits = [];
+    if (event.rating?.source) reviewBits.push(escapeHtml(event.rating.source));
+    if (event.rating?.count) reviewBits.push(`${Number(event.rating.count)} avis`);
+    const rating = reviewBits.length ? `<p class="rating-line">${reviewBits.join(" · ")}</p>` : "";
     return `<div class="fold">
       ${rating}
       ${desc ? `<p class="desc">${escapeHtml(desc)}</p>` : ""}
