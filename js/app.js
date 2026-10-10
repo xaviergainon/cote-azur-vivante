@@ -956,11 +956,49 @@
     }
   };
 
+  function paintCover() {
+    const season = document.getElementById("splashSeason");
+    const bill = document.getElementById("splashBill");
+    const list = document.getElementById("splashPicks");
+    if (season) {
+      const label = dayDate(today).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      season.textContent = `Alpes-Maritimes · ${label}`;
+    }
+    if (!bill || !list) return;
+    const days = new Set(weekendDays());
+    const preferred = new Set(["theatre", "concert", "danse", "cinema", "humour"]);
+    const seen = new Set();
+    const picks = data.events
+      .filter((event) => (event.days || []).some((day) => days.has(day)))
+      .filter((event) => {
+        const key = String(event.title || "").trim().toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => {
+        const rank = (event) => (preferred.has(event.category) ? 0 : 1);
+        return rank(a) - rank(b) || String(a.time || "99:99").localeCompare(String(b.time || "99:99"));
+      })
+      .slice(0, 3);
+    if (picks.length < 2) {
+      bill.hidden = true;
+      return;
+    }
+    list.innerHTML = picks.map((event) => `
+      <li>
+        <span>${escapeHtml(event.title)}</span>
+        <span class="where">${escapeHtml(event.city || "")}</span>
+      </li>`).join("");
+    bill.hidden = false;
+  }
+
   if (els.sources) {
     els.sources.innerHTML = data.meta.sources
       .map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>`)
       .join(" · ");
   }
+  paintCover();
   bindUi();
   try {
     if (sessionStorage.getItem("cav-in")) els.splash.classList.add("hide");

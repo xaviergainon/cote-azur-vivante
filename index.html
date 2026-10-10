@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600&family=Sora:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/map.css?v=13" />
+    <link rel="stylesheet" href="css/map.css?v=14" />
   </head>
   <body data-view="map">
     <div id="map" aria-label="Carte des manifestations dans les Alpes-Maritimes"></div>
@@ -127,14 +127,23 @@
 
     <div class="splash" id="splash">
       <div class="splash-inner">
-        <div class="eyebrow">Alpes-Maritimes</div>
-        <h1>Où on sort&nbsp;?</h1>
-        <p>Dis ce que tu cherches, puis la période : aujourd’hui, le week-end, les 7 jours ou le mois.</p>
-        <button type="button" class="splash-btn" id="enterBtn">Voir les sorties</button>
+        <div>
+          <p class="splash-kicker">Côte d’Azur Vivante</p>
+          <p class="splash-season" id="splashSeason">Alpes-Maritimes</p>
+          <h1>À l’affiche</h1>
+          <p class="splash-line">Théâtre, musique, danse, cinéma et expositions.</p>
+        </div>
+        <div class="splash-foot">
+          <div class="splash-bill" id="splashBill" hidden>
+            <p class="splash-when" id="splashWhen">Ce week-end</p>
+            <ul id="splashPicks"></ul>
+          </div>
+          <button type="button" class="splash-btn" id="enterBtn">Ouvrir le programme</button>
+        </div>
       </div>
     </div>
 
     <script src="js/config.js"></script>
-    <script src="js/app.js?v=14"></script>
+    <script src="js/app.js?v=15"></script>
   </body>
 </html>
