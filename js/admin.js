@@ -977,9 +977,9 @@ const PLACE_KINDS = [
 function pointLabel(place) {
   const lat = Number(place.lat);
   const lng = Number(place.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "sans point";
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "latitude et longitude manquantes";
   const fmt = (value) => value.toLocaleString("fr-FR", { minimumFractionDigits: 5, maximumFractionDigits: 5 });
-  return `${fmt(lat)}, ${fmt(lng)}`;
+  return `latitude ${fmt(lat)} · longitude ${fmt(lng)}`;
 }
 
 function placesView() {
@@ -996,7 +996,7 @@ function placesView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Lieux culturels</h2>
-      <p class="hint">Un lieu validé sert de référence. S’y rendre utilise le point de la sortie, ou celui du lieu quand la sortie n’en a pas. Sans point, l’itinéraire part du nom de la salle.</p>
+      <p class="hint">Le lieu porte l’adresse, la latitude et la longitude. Une sortie qui nomme cette salle les reçoit quand le lieu est validé. S’il manque, elles sont reprises de la sortie ou cherchées depuis l’adresse.</p>
       <div class="row">
         <button class="ghost${state.placeFilter === "draft" ? " active" : ""}" type="button" data-place-filter="draft">Brouillons</button>
         <button class="ghost${state.placeFilter === "published" ? " active" : ""}" type="button" data-place-filter="published">Validés</button>
