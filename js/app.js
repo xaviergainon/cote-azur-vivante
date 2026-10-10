@@ -250,110 +250,6 @@
     }, 2600);
   }
 
-  function parseClock(text) {
-    const match = /(\d{1,2})\s*h\s*(\d{2})?/i.exec(text || "");
-    if (!match) return null;
-    const h = Number(match[1]);
-    const min = Number(match[2] || 0);
-    if (h > 23 || min > 59) return null;
-    return { h, min };
-  }
-
-  function icsEscape(value) {
-    return String(value || "")
-      .replace(/\\/g, "\\\\")
-      .replace(/\r?\n/g, "\\n")
-      .replace(/,/g, "\\,")
-      .replace(/;/g, "\\;");
-  }
-
-  function fold(line) {
-    const chunks = [];
-    let rest = line;
-    while (rest.length > 73) {
-      chunks.push(rest.slice(0, 73));
-      rest = ` ${rest.slice(73)}`;
-    }
-    chunks.push(rest);
-    return chunks.join("\r\n");
-  }
-
-  function formatWall(date) {
-    const p = (n) => String(n).padStart(2, "0");
-    return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}T${p(date.getHours())}${p(date.getMinutes())}00`;
-  }
-
-  function vevent(event, day) {
-    const range = String(event.time || "").split(/\s*[–—-]\s*/);
-    const startClock = parseClock(range[0]);
-    const endClock = range[1] ? parseClock(range[1]) : null;
-    const uid = `${event.id}-${day}@cote-azur-vivante`;
-    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-    const lines = ["BEGIN:VEVENT", `UID:${uid}`, `DTSTAMP:${stamp}`];
-    if (!startClock) {
-      const [y, m, d] = day.split("-");
-      const next = new Date(Number(y), Number(m) - 1, Number(d) + 1);
-      const p = (n) => String(n).padStart(2, "0");
-      lines.push(`DTSTART;VALUE=DATE:${day.replace(/-/g, "")}`);
-      lines.push(`DTEND;VALUE=DATE:${next.getFullYear()}${p(next.getMonth() + 1)}${p(next.getDate())}`);
-    } else {
-      const [y, m, d] = day.split("-").map(Number);
-      const start = new Date(y, m - 1, d, startClock.h, startClock.min, 0);
-      const end = endClock
-        ? new Date(y, m - 1, d, endClock.h, endClock.min, 0)
-        : new Date(start.getTime() + 2 * 60 * 60 * 1000);
-      if (end <= start) end.setDate(end.getDate() + 1);
-      lines.push(`DTSTART:${formatWall(start)}`);
-      lines.push(`DTEND:${formatWall(end)}`);
-    }
-    lines.push(
-      `SUMMARY:${icsEscape(event.title)}`,
-      `LOCATION:${icsEscape([event.venue, event.address, event.city].filter(Boolean).join(", "))}`,
-      `DESCRIPTION:${icsEscape([event.description, event.time, event.price, event.url].filter(Boolean).join("\n"))}`,
-      "END:VEVENT"
-    );
-    return lines.map(fold).join("\r\n");
-  }
-
-  function downloadIcs(events, filename) {
-    const occurrences = events.flatMap((event) => {
-      const days = state.view === "cal"
-        ? event.days.filter((day) => sameMonth(day, state.cal))
-        : event.days.filter((day) => activeDays().includes(day));
-      return days.map((day) => vevent(event, day));
-    });
-    if (!occurrences.length) {
-      toast("Rien à exporter avec ces filtres.");
-      return;
-    }
-    const body = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Cote d Azur Vivante//FR",
-      "CALSCALE:GREGORIAN",
-      "METHOD:PUBLISH",
-      ...occurrences,
-      "END:VCALENDAR",
-    ].join("\r\n");
-    const blob = new Blob([body], { type: "text/calendar;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 1500);
-    toast(occurrences.length > 1 ? `${occurrences.length} sorties prêtes pour ton agenda.` : "Sortie prête pour ton agenda.");
-  }
-
-  function exportCurrent() {
-    if (state.view === "cal") {
-      const monthEvents = data.events.filter((event) => passes(event, null) && event.days.some((day) => sameMonth(day, state.cal)));
-      const stamp = `${state.cal.getFullYear()}-${String(state.cal.getMonth() + 1).padStart(2, "0")}`;
-      downloadIcs(monthEvents, `cote-azur-${stamp}.ics`);
-      return;
-    }
-    downloadIcs(filtered(), `cote-azur-${state.span}.ics`);
-  }
-
   function shiftMonth(delta) {
     state.cal = new Date(state.cal.getFullYear(), state.cal.getMonth() + delta, 1);
     if (!sameMonth(state.day, state.cal)) {
@@ -402,7 +298,6 @@
         <div class="row">
         ${ratingHtml(event)}
         <span class="price${event.free ? " free" : ""}">${escapeHtml(event.price)}</span>
-        <button type="button" class="mini" data-export="${escapeHtml(event.id)}">Agenda</button>
       </div>
     </article>`;
   }
@@ -544,7 +439,6 @@
       <span class="price-tag${event.free ? " free" : ""}">${escapeHtml(event.price)}</span>
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
-        <button type="button" data-export="${escapeHtml(event.id)}">Dans mon agenda</button>
         ${source}
       </div>`;
     els.ride.hidden = false;
@@ -711,11 +605,6 @@
     if (state.view === "map") fitToEvents(filtered());
   }
 
-  function exportOne(event) {
-    const day = nextDayInView(event) || event.days[0];
-    downloadIcs([{ ...event, days: day ? [day] : event.days }], `sortie-${event.id}.ics`);
-  }
-
   function setView(view) {
     state.view = view;
     document.body.dataset.view = view;
@@ -777,12 +666,6 @@
   }
 
   function onCardClick(event) {
-    const exp = event.target.closest("[data-export]");
-    if (exp) {
-      const item = data.events.find((entry) => entry.id === exp.dataset.export);
-      if (item) exportOne(item);
-      return;
-    }
     const opener = event.target.closest("[data-id]");
     if (!opener) return;
     selectEvent(opener.dataset.id, false);
@@ -856,9 +739,6 @@
       render();
       closeSheet();
     });
-    ["exportList", "exportCal", "exportSheet"].forEach((id) => {
-      document.getElementById(id).addEventListener("click", exportCurrent);
-    });
     els.list.addEventListener("click", onCardClick);
     els.calEvents.addEventListener("click", onCardClick);
     els.calGrid.addEventListener("click", (event) => {
@@ -894,13 +774,6 @@
       selectEvent(pick.id, true);
     });
     document.getElementById("rideClose").addEventListener("click", clearSelection);
-    els.ride.addEventListener("click", (event) => {
-      const exp = event.target.closest("[data-export]");
-      if (exp) {
-        const item = data.events.find((entry) => entry.id === exp.dataset.export);
-        if (item) exportOne(item);
-      }
-    });
     els.enterBtn.addEventListener("click", () => {
       els.splash.classList.add("hide");
       setTimeout(() => {

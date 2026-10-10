@@ -584,7 +584,7 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
 .card .meta { margin: 0; color: var(--mist); font-size: 0.86rem; }
 .card .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; padding: 0 14px 0 16px; }
 .card:not(:has(.shot)) .card-open { padding-top: 14px; }
-.price, .mini {
+.price {
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 0.75rem;
@@ -598,12 +598,6 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
 }
 .rating span { margin-left: 1px; font-size: 0.72em; font-weight: 500; }
 .rating-line { margin: 0 0 8px; color: var(--mist); }
-.mini {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--gold);
-  font-weight: 600;
-}
 .empty { padding: 28px 8px; text-align: center; color: var(--mist); line-height: 1.5; }
 
 .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
