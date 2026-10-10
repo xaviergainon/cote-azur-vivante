@@ -370,8 +370,8 @@ function keysView() {
       <form id="keysForm" class="stack">
         <label>Collecte
           <select name="provider">
-            <option value="gemini" ${settings.provider === "cursor" ? "" : "selected"}>Gemini</option>
-            <option value="cursor" ${settings.provider === "cursor" ? "selected" : ""}>Cursor</option>
+            <option value="cursor" ${settings.provider === "gemini" ? "" : "selected"}>Cursor</option>
+            <option value="gemini" ${settings.provider === "gemini" ? "selected" : ""}>Gemini</option>
           </select>
         </label>
         <div class="grid">
@@ -479,7 +479,7 @@ function agentView() {
     manual: "manuel",
   };
   const kind = runKinds[run?.trigger_name] || "manuel";
-  const provider = state.settings?.provider === "cursor" ? "cursor" : "gemini";
+  const provider = state.settings?.provider === "gemini" ? "gemini" : "cursor";
   const cursorReady = Boolean(state.settings?.cursor?.configured);
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
@@ -508,8 +508,8 @@ function agentView() {
       ${briefsForm()}
       <label>Moteur
         <select id="providerPick">
-          <option value="gemini" ${provider === "gemini" ? "selected" : ""}>Gemini</option>
           <option value="cursor" ${provider === "cursor" ? "selected" : ""}>Cursor</option>
+          <option value="gemini" ${provider === "gemini" ? "selected" : ""}>Gemini</option>
         </select>
       </label>
       <p class="hint">${provider === "cursor"
@@ -642,7 +642,7 @@ function taskHint(task, missing) {
     return "Réunit les fiches du même titre dans la même ville, les lieux au nom proche dans la même commune, et les pages de réservation identiques. Les dates s’ajoutent, les champs vides se complètent, le doublon est retiré. Deux villes, ou deux salles vraiment différentes, restent séparées. Les bibliothèques ne sont pas touchées.";
   }
   if (task === "times") {
-    return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
+    return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord, avec le moteur choisi au-dessus. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
   }
   if (task === "venues") {
     return "Deux recherches dans les Alpes-Maritimes et à Monaco, douze lieux au plus, avec le moteur choisi au-dessus. Horaires, adresse et site si la page les donne. Chaque lieu reste en brouillon tant qu’il n’est pas validé dans Lieux.";
