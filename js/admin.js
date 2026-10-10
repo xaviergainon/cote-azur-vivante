@@ -472,6 +472,8 @@ function agentView() {
     duplicates: "planifié, doublons",
     venues: "planifié, lieux",
     bookings: "planifié, réservations",
+    details: "planifié, fiches",
+    pilot: "pilote",
     manual: "manuel",
   };
   const kind = runKinds[run?.trigger_name] || "manuel";
@@ -480,7 +482,7 @@ function agentView() {
   const defaults = defaultWindow();
   const windowMin = state.windowMin || defaults.min;
   const windowMax = state.windowMax || defaults.max;
-  const taskChoices = ["discover", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"];
+  const taskChoices = ["pilot", "discover", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"];
   const task = taskChoices.includes(state.runTask) ? state.runTask : "discover";
   const missing = Number(state.missingImages || 0);
   return `
@@ -513,6 +515,7 @@ function agentView() {
         : "Gemini interroge Google, puis lit les pages."}${cursorReady ? "" : " La clé Cursor n’est pas encore enregistrée."}</p>
       <label>Passage
         <select id="runTask">
+          <option value="pilot" ${task === "pilot" ? "selected" : ""}>Piloter la journée</option>
           <option value="discover" ${task === "discover" ? "selected" : ""}>Découvrir des sorties</option>
           <option value="images" ${task === "images" ? "selected" : ""}>Compléter les affiches manquantes</option>
           <option value="libraries" ${task === "libraries" ? "selected" : ""}>Bibliothèques du mois</option>
@@ -621,6 +624,9 @@ function briefsForm() {
 }
 
 function taskHint(task, missing) {
+  if (task === "pilot") {
+    return "Enchaîne les passages utiles, un à la fois : sorties, doublons, fiches, affiches, horaires, puis les lieux et les réservations une fois dans la semaine, les bibliothèques et les avis une fois dans le mois. Une étape déjà faite, ou sans rien à reprendre, est sautée. Rien n’est publié. Si Pilote est actif dans Planning, lui seul part tout seul.";
+  }
   if (task === "images") {
     return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, 24 recherches au plus, par groupes de huit. Le suivant reprend la suite.`;
   }
@@ -649,6 +655,7 @@ function taskHint(task, missing) {
 }
 
 function taskButton(task) {
+  if (task === "pilot") return "Piloter la journée";
   if (task === "images") return "Compléter les affiches";
   if (task === "libraries") return "Relever les bibliothèques";
   if (task === "ratings") return "Chercher des avis";
@@ -1353,7 +1360,7 @@ function bindApp() {
 
   document.getElementById("runTask")?.addEventListener("change", (event) => {
     const picked = event.target.value;
-    state.runTask = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
+    state.runTask = ["pilot", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
     setTimeout(() => render(), 0);
   });
 
@@ -1461,7 +1468,7 @@ function bindApp() {
       state.windowMin = minDay;
       state.windowMax = maxDay;
       const picked = document.getElementById("runTask")?.value;
-      const task = ["images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
+      const task = ["pilot", "images", "libraries", "ratings", "duplicates", "times", "venues", "bookings", "details"].includes(picked) ? picked : "discover";
       state.runTask = task;
       await api("/api/admin/runs", { method: "POST", body: JSON.stringify({ minDay, maxDay, task }) });
       state.busy = true;
