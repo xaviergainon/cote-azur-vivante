@@ -105,6 +105,12 @@ async function refreshRuns() {
   if (state.view === "agent") render();
 }
 
+async function refreshBriefs() {
+  const data = await api("/api/admin/briefs");
+  state.briefs = data.briefs || {};
+  state.briefLabels = data.labels || {};
+}
+
 function parisToday() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris",
@@ -308,6 +314,7 @@ function agentView() {
           <a href="#events" id="goDrafts">Voir les brouillons</a>
         </div>
       </form>
+      ${briefsForm()}
       <label>Moteur
         <select id="providerPick">
           <option value="gemini" ${provider === "gemini" ? "selected" : ""}>Gemini</option>
@@ -336,6 +343,24 @@ function agentView() {
       <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
+}
+
+function briefsForm() {
+  const labels = state.briefLabels || {};
+  const briefs = state.briefs || {};
+  const order = ["discover_page", "review_page", "discover_search", "review_search", "libraries", "ratings"];
+  const fields = order.map((key) => `<label>${esc(labels[key] || key)}
+        <textarea class="brief" name="${key}">${esc(briefs[key] || "")}</textarea>
+      </label>`).join("");
+  return `<form id="briefsForm" class="stack">
+      <h2>Consignes</h2>
+      <p class="hint">Ce sont les consignes lues par l’agent. {{jours}}, {{categories}} et {{aujourdhui}} sont remplis au moment de la collecte. Un enregistrement sert à la collecte suivante.</p>
+      ${fields}
+      <div class="row">
+        <button class="primary" type="submit">Enregistrer les consignes</button>
+        <button class="ghost" type="button" id="resetBriefs">Revenir au texte d’origine</button>
+      </div>
+    </form>`;
 }
 
 function taskHint(task, missing) {
@@ -675,6 +700,7 @@ function bindApp() {
         if (state.view === "events") await refreshEvents();
         if (state.view === "agent") {
           await refreshSettings();
+          await refreshBriefs();
           await refreshRuns();
         }
         if (state.view === "keys") await refreshSettings();
@@ -826,6 +852,38 @@ function bindApp() {
   document.getElementById("runTask")?.addEventListener("change", (event) => {
     const picked = event.target.value;
     state.runTask = ["images", "libraries", "ratings"].includes(picked) ? picked : "discover";
+    setTimeout(() => render(), 0);
+  });
+
+  document.getElementById("briefsForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.error = "";
+    state.message = "";
+    try {
+      const saved = await api("/api/admin/briefs", {
+        method: "PUT",
+        body: JSON.stringify(formBody(event.currentTarget)),
+      });
+      state.briefs = saved.briefs;
+      state.briefLabels = saved.labels;
+      state.message = "Consignes enregistrées.";
+    } catch (error) {
+      state.error = error.message;
+    }
+    render();
+  });
+
+  document.getElementById("resetBriefs")?.addEventListener("click", async () => {
+    state.error = "";
+    state.message = "";
+    try {
+      const saved = await api("/api/admin/briefs/reset", { method: "POST", body: "{}" });
+      state.briefs = saved.briefs;
+      state.briefLabels = saved.labels;
+      state.message = "Consignes d’origine rétablies.";
+    } catch (error) {
+      state.error = error.message;
+    }
     render();
   });
 
@@ -1100,7 +1158,10 @@ async function boot() {
     if (state.view === "report") await refreshReport();
     if (state.view === "sources") await refreshSources();
     if (state.view === "events") await refreshEvents();
-    if (state.view === "agent") await refreshRuns();
+    if (state.view === "agent") {
+      await refreshBriefs();
+      await refreshRuns();
+    }
   }
   render();
 }

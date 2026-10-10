@@ -8,7 +8,7 @@ Choix faits pour l’agent interne, sans les redemander.
 - L’horaire tourne dans le processus web. Au démarrage, s’il est déjà passé et qu’aucune collecte quotidienne n’a abouti ce jour-là, elle part tout de suite. Une collecte déjà réussie n’est pas relancée. Une collecte en erreur est retentée, trois fois au plus dans la journée.
 - Gemini 3 répond avec un budget de réflexion. L’agent demande le niveau `low`, ignore les parties « thought », et ne fixe pas `temperature` : sur ces modèles une température basse coupe la réponse.
 - Si Gemini répond « quota » ou « high demand », l’agent attend le délai indiqué (quatre essais au plus) au lieu d’abandonner la source. Les appels sont espacés de 13 secondes pour rester sous le quota gratuit de 5 requêtes par minute.
-- L’admin peut changer l’heure, couper l’automatisme, ou lancer une collecte tout de suite. Les sources et les recherches se règlent dans `/admin`.
+- L’admin peut changer l’heure, couper l’automatisme, ou lancer une collecte tout de suite. Les sources, les recherches et les consignes des agents se règlent dans `/admin`, page Collecte. Les consignes d’origine restent le texte de départ. `{{jours}}`, `{{categories}}` et `{{aujourdhui}}` sont remplis au lancement.
 
 ## Ce que l’agent lit
 
@@ -34,7 +34,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 - L’accueil est une couverture de saison : « À l’affiche », les disciplines, et trois sorties du week-end. Elle reste affichée à chaque ouverture. « Ouvrir le programme » entre sur la carte.
 - À l’ouverture, et avec le bouton Recadrer, la carte montre les Alpes-Maritimes, de la côte aux montagnes. Un filtre de période ou d’envie resserre ensuite le cadre sur les sorties retenues.
-- Les marqueurs sont des bulles colorées à pointe courte. La bulle garde la couleur de la catégorie. Le signe blanc dit la famille : spectacle (masque), musique (note), cinéma (clap), expo (cadre), famille (deux silhouettes), lecture (livre), table (fourchette), plein air (soleil). La bulle choisie est un peu plus grande, cerclée de blanc.
+- Les marqueurs sont des bulles pastel à pointe courte, en dégradé léger avec une ombre longue discrète. Chaque famille garde sa couleur et son signe blanc : spectacle (masques), musique (note), cinéma (clap), expo (cadre), famille (trois silhouettes), lecture (livre), table (fourchette), plein air (soleil). La bulle choisie est un peu plus grande, cerclée de blanc.
 - Sur téléphone, la carte est en plein écran. On cherche d’abord une envie (théâtre, concert, cinéma, famille, expo) et une période : aujourd’hui, le week-end, les 7 prochains jours, ou le mois en cours. Le défaut est les 7 jours. Sur la carte, ces choix sont repliés : le bouton Jours les ouvre et Réduire les referme. « Un jour » ouvre la barre des jours. Les autres envies, la ville et le gratuit restent dans le volet. La liste garde les choix ouverts et regroupe les sorties par jour. Le calendrier sert à viser une date.
 - La fiche d’une sortie propose l’itinéraire. Elle s’ouvre depuis la liste ou un marqueur.
 - Sur grand écran, la carte reste visible. La liste et le calendrier sont un panneau à droite. La fiche événement reste dans la colonne de gauche, au-dessus du logo Google.
