@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600&family=Sora:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/map.css?v=12" />
+    <link rel="stylesheet" href="css/map.css?v=13" />
   </head>
   <body data-view="map">
     <div id="map" aria-label="Carte des manifestations dans les Alpes-Maritimes"></div>
@@ -39,6 +39,7 @@
       <div class="when">
         <strong id="whenLabel">7 prochains jours</strong>
         <span id="stats"></span>
+        <button type="button" class="text-btn" id="daysToggle" aria-expanded="false">Jours</button>
       </div>
       <div class="span-row" id="spanRow" role="tablist" aria-label="Période"></div>
       <div class="intent-row" id="intentRow" role="tablist" aria-label="Envie"></div>
@@ -52,15 +53,6 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
-
-    <button type="button" class="peek" id="peek" hidden>
-      <span class="peek-shot" id="peekShot" hidden></span>
-      <span class="peek-copy">
-        <span class="peek-kicker" id="peekKicker">Prochaine sortie</span>
-        <strong id="peekTitle"></strong>
-        <span id="peekMeta"></span>
-      </span>
-    </button>
 
     <article class="ride" id="ride" hidden>
       <div class="ride-bar" aria-hidden="true"></div>
@@ -143,6 +135,6 @@
     </div>
 
     <script src="js/config.js"></script>
-    <script src="js/app.js?v=13"></script>
+    <script src="js/app.js?v=14"></script>
   </body>
 </html>

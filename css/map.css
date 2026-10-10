@@ -235,6 +235,12 @@ a { color: var(--gold); }
   box-shadow: var(--shadow);
 }
 
+body[data-view="map"]:not(.days-open) .span-row,
+body[data-view="map"]:not(.days-open) .intent-row,
+body[data-view="map"]:not(.days-open) .timeline,
+body[data-view="map"]:not(.days-open) .active-filters { display: none; }
+body:not([data-view="map"]) #daysToggle { display: none; }
+
 body[data-view="cal"] .datebar,
 body[data-view="list"] .peek,
 body[data-view="cal"] .peek,

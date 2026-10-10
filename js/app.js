@@ -81,6 +81,7 @@
     day: data.meta.days.includes(today) ? today : data.meta.days[0] || today,
     span: "week",
     intent: "all",
+    daysOpen: false,
     city: "all",
     freeOnly: false,
     query: "",
@@ -112,11 +113,6 @@
     splash: document.getElementById("splash"),
     enterBtn: document.getElementById("enterBtn"),
     mapError: document.getElementById("mapError"),
-    peek: document.getElementById("peek"),
-    peekKicker: document.getElementById("peekKicker"),
-    peekTitle: document.getElementById("peekTitle"),
-    peekShot: document.getElementById("peekShot"),
-    peekMeta: document.getElementById("peekMeta"),
     ride: document.getElementById("ride"),
     rideBody: document.getElementById("rideBody"),
     filterBadge: document.getElementById("filterBadge"),
@@ -519,45 +515,6 @@
       : `<div class="empty">Rien sur cette période.<br>Élargis les jours, ou choisis une autre envie.</div>`;
   }
 
-  function minutesOf(time) {
-    const clock = parseClock(time);
-    return clock ? clock.h * 60 + clock.min : 24 * 60;
-  }
-
-  function soonest(events) {
-    const ranked = events
-      .map((event) => ({ event, day: nextDayInView(event) }))
-      .filter((item) => item.day)
-      .sort((a, b) => a.day.localeCompare(b.day) || minutesOf(a.event.time) - minutesOf(b.event.time));
-    if (!ranked.length) return null;
-    if (ranked[0].day === today) {
-      const now = new Date().getHours() * 60 + new Date().getMinutes();
-      const later = ranked.find((item) => item.day > today || minutesOf(item.event.time) >= now - 20);
-      if (later) return later;
-    }
-    return ranked[0];
-  }
-
-  function renderPeek(events) {
-    const pick = soonest(events);
-    const show = state.view === "map" && !state.selectedId && pick;
-    els.peek.hidden = !show;
-    document.body.classList.toggle("has-peek", Boolean(show));
-    if (!show) return;
-    const event = pick.event;
-    const meta = catMeta(event.category);
-    els.peekShot.hidden = !event.image;
-    els.peekShot.innerHTML = shotHtml(event);
-    els.peekKicker.textContent = state.intent !== "all"
-      ? meta.label
-      : pick.day === today ? "Prochaine sortie" : "À ne pas manquer";
-    els.peekTitle.textContent = event.title;
-    const when = pick.day === today ? "" : `${dayParts(pick.day).dow} ${dayParts(pick.day).n} · `;
-    els.peekMeta.textContent = `${when}${event.time || "Horaire à confirmer"} · ${event.city}`;
-    els.peek.dataset.id = event.id;
-    els.peek.style.borderLeftColor = meta.color;
-  }
-
   function renderRide() {
     const event = data.events.find((item) => item.id === state.selectedId);
     if (!event || !passes(event, state.view === "cal" ? null : undefined)) {
@@ -570,7 +527,6 @@
     const source = /^https?:\/\//i.test(event.url || "")
       ? `<a href="${escapeHtml(event.url)}" target="_blank" rel="noopener">Source</a>`
       : "";
-    const mapBtn = state.view === "map" ? "" : `<button type="button" data-map="${escapeHtml(event.id)}">Sur la carte</button>`;
     els.rideBody.innerHTML = `
       ${shotHtml(event)}
       <p class="ride-kicker" style="color:${meta.color}">${escapeHtml(meta.label)} · ${escapeHtml(event.time || "horaire libre")}</p>
@@ -581,7 +537,6 @@
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
         <button type="button" data-export="${escapeHtml(event.id)}">Dans mon agenda</button>
-        ${mapBtn}
         ${source}
       </div>`;
     els.ride.hidden = false;
@@ -676,7 +631,7 @@
     const bar = document.querySelector(".datebar");
     const top = bar ? Math.ceil(bar.getBoundingClientRect().bottom) + 16 : 210;
     state.map.fitBounds(bounds, narrow
-      ? { top, right: 28, bottom: 150, left: 28 }
+      ? { top, right: 28, bottom: 96, left: 28 }
       : { top: 90, right: 80, bottom: 80, left: 80 });
     google.maps.event.addListenerOnce(state.map, "idle", () => {
       if (state.map.getZoom() > 13) state.map.setZoom(13);
@@ -782,8 +737,13 @@
     renderGrouped(els.list, events);
     renderCalendar();
     renderMarkers(events);
+    document.body.classList.toggle("days-open", state.daysOpen);
+    const daysToggle = document.getElementById("daysToggle");
+    if (daysToggle) {
+      daysToggle.textContent = state.daysOpen ? "Réduire" : "Jours";
+      daysToggle.setAttribute("aria-expanded", String(state.daysOpen));
+    }
     renderRide();
-    renderPeek(events);
     const datebar = document.querySelector(".datebar");
     if (datebar && getComputedStyle(datebar).display !== "none") {
       const bottom = Math.ceil(datebar.getBoundingClientRect().bottom);
@@ -889,6 +849,14 @@
       if (!button) return;
       setView(button.dataset.view);
     });
+    document.getElementById("daysToggle").addEventListener("click", () => {
+      state.daysOpen = !state.daysOpen;
+      render();
+      if (state.view === "map" && state.map) {
+        google.maps.event.trigger(state.map, "resize");
+        fitToEvents(filtered());
+      }
+    });
     document.getElementById("recenterBtn").addEventListener("click", () => fitToEvents(filtered()));
     document.getElementById("surpriseBtn").addEventListener("click", () => {
       const pool = filtered().filter(hasPoint);
@@ -901,20 +869,12 @@
       setView("map");
       selectEvent(pick.id, true);
     });
-    els.peek.addEventListener("click", () => {
-      if (els.peek.dataset.id) selectEvent(els.peek.dataset.id, true);
-    });
     document.getElementById("rideClose").addEventListener("click", clearSelection);
     els.ride.addEventListener("click", (event) => {
       const exp = event.target.closest("[data-export]");
       if (exp) {
         const item = data.events.find((entry) => entry.id === exp.dataset.export);
         if (item) exportOne(item);
-      }
-      const mapBtn = event.target.closest("[data-map]");
-      if (mapBtn) {
-        setView("map");
-        selectEvent(mapBtn.dataset.id, true);
       }
     });
     els.enterBtn.addEventListener("click", () => {
