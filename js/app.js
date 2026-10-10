@@ -269,7 +269,9 @@
     if (hasPoint(event)) {
       return `https://www.google.com/maps/dir/?api=1&destination=${Number(event.lat)},${Number(event.lng)}`;
     }
-    const q = encodeURIComponent([event.venue, event.city, "Alpes-Maritimes"].filter(Boolean).join(" "));
+    const city = String(event.city || "");
+    const monaco = /monaco|monte[-\s]?carlo/i.test(city);
+    const q = encodeURIComponent([event.venue, city, monaco ? "" : "Alpes-Maritimes"].filter(Boolean).join(" "));
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }
 
@@ -948,7 +950,7 @@
     const list = document.getElementById("splashPicks");
     if (season) {
       const label = dayDate(today).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-      season.textContent = `Alpes-Maritimes · ${label}`;
+      season.textContent = `Alpes-Maritimes et Monaco · ${label}`;
     }
     if (!bill || !list) return;
     const days = new Set(weekendDays());
