@@ -427,10 +427,10 @@ function taskHint(task, missing) {
     return "Douze sorties des 30 prochains jours, sans heure, les plus proches d’abord. L’heure n’est écrite que si une page la donne pour ce titre et ce lieu. Le lendemain, la collecte en reprend six autres.";
   }
   if (task === "venues") {
-    return "Deux recherches, douze lieux au plus. Horaires, adresse et site si la page les donne. Chaque lieu reste en brouillon tant qu’il n’est pas validé dans Lieux.";
+    return "Deux recherches, douze lieux au plus, avec le moteur choisi au-dessus. Horaires, adresse et site si la page les donne. Chaque lieu reste en brouillon tant qu’il n’est pas validé dans Lieux.";
   }
   if (task === "bookings") {
-    return "Six lieux déjà validés, puis six sorties à venir, sans lien de réservation. Chaque page reste une proposition tant qu’elle n’est pas acceptée dans Réservations.";
+    return "Six lieux déjà validés, puis six sorties à venir, avec le moteur choisi au-dessus. Chaque page reste une proposition tant qu’elle n’est pas acceptée dans Réservations.";
   }
   return "Par défaut : hier et les 30 jours suivants. Ces dates ne servent qu’au lancement manuel. La collecte automatique garde les 30 jours. Les bibliothèques et les avis ne sont pas relus ici.";
 }
