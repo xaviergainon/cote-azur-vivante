@@ -30,7 +30,7 @@ Choix faits pour l’agent interne, sans les redemander.
 - Cursor peut remplacer Gemini depuis l’admin. Sa clé lance un agent cloud sans dépôt : il ne modifie pas le code et il est supprimé à la fin de la collecte. Le choix reste sur Gemini tant qu’on ne le change pas.
 - Les clés se saisissent dans l’admin et restent chiffrées. Elles ne sont pas dans Git.
 
-## Carte, liste, agenda
+## Carte, liste, calendrier
 
 - Sur téléphone, la carte est en plein écran. On cherche d’abord une envie (théâtre, concert, cinéma, famille, expo) et une période : aujourd’hui, le week-end, les 7 prochains jours, ou le mois en cours. Le défaut est les 7 jours. Sur la carte, ces choix sont repliés : le bouton Jours les ouvre et Réduire les referme. « Un jour » ouvre la barre des jours. Les autres envies, la ville et le gratuit restent dans le volet. La liste garde les choix ouverts et regroupe les sorties par jour. Le calendrier sert à viser une date.
 - La fiche d’une sortie propose l’itinéraire et l’ajout à l’agenda. Elle s’ouvre depuis la liste ou un marqueur.
