@@ -657,6 +657,13 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
 }
 .card.active { border-color: rgba(62, 207, 194, 0.65); }
 .card-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; min-width: 0; }
+.rank {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--gold);
+}
+.rank-empty { margin: 0 0 12px; color: var(--mist); font-size: 0.9rem; }
 .card h3, .card .meta { overflow-wrap: anywhere; }
 .card .time { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .badge { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cat, var(--teal)); }
