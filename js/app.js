@@ -342,6 +342,80 @@
     return `<button type="button" class="book off" disabled>Réserver</button>`;
   }
 
+  function shareUrl(event) {
+    const url = new URL(location.href);
+    url.hash = "";
+    url.search = "";
+    url.searchParams.set("sortie", event.id);
+    return url.toString();
+  }
+
+  function shareControl(event) {
+    return `<button type="button" class="share" data-share="${escapeHtml(event.id)}">Partager</button>`;
+  }
+
+  function copyText(value) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(value);
+    return new Promise((resolve, reject) => {
+      const input = document.createElement("textarea");
+      input.value = value;
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      document.body.appendChild(input);
+      input.select();
+      try {
+        const ok = document.execCommand("copy");
+        input.remove();
+        if (ok) resolve();
+        else reject(new Error("copy"));
+      } catch (error) {
+        input.remove();
+        reject(error);
+      }
+    });
+  }
+
+  async function shareEvent(event) {
+    const url = shareUrl(event);
+    const payload = {
+      title: event.title,
+      text: [event.title, event.venue, event.city].filter(Boolean).join(" · "),
+      url,
+    };
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share(payload);
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+    try {
+      await copyText(url);
+      toast("Lien copié.");
+    } catch {
+      toast("Partage indisponible sur cet appareil.");
+    }
+  }
+
+  function dayForFocus(event) {
+    const days = [...(event.days || [])].filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort();
+    if (!days.length) return today;
+    return days.find((day) => day >= today) || days[days.length - 1];
+  }
+
+  function openLinkedEvent(event) {
+    const day = dayForFocus(event);
+    if (!dayRange(today, 7).includes(day)) {
+      state.span = "day";
+      state.day = day;
+      state.cal = dayDate(day);
+    }
+    state.selectedId = event.id;
+    els.splash.classList.add("hide");
+  }
+
   function detailInCard() {
     return state.view !== "map" && window.matchMedia("(max-width: 979px)").matches;
   }
@@ -360,6 +434,7 @@
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
         ${bookControl(event)}
+        ${shareControl(event)}
         ${source}
       </div>
     </div>`;
@@ -688,6 +763,7 @@
       <div class="ride-actions">
         <a class="go" href="${directionsUrl(event)}" target="_blank" rel="noopener">Y aller</a>
         ${bookControl(event)}
+        ${shareControl(event)}
         ${source}
       </div>`;
     els.ride.hidden = false;
@@ -1075,6 +1151,14 @@
     });
     els.list.addEventListener("click", onCardClick);
     els.calEvents.addEventListener("click", onCardClick);
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-share]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const item = data.events.find((entry) => entry.id === button.dataset.share);
+      if (item) shareEvent(item);
+    }, true);
     els.calGrid.addEventListener("click", (event) => {
       const button = event.target.closest("[data-day]");
       if (!button) return;
@@ -1182,6 +1266,13 @@
       }
       state.ready = true;
       render();
+      if (state.selectedId && state.view === "map") {
+        const linked = data.events.find((item) => item.id === state.selectedId);
+        if (linked && hasPoint(linked)) {
+          focusPin(linked);
+          return;
+        }
+      }
       if (!els.splash.classList.contains("hide")) return;
       fitDepartment();
     } catch (error) {
@@ -1256,6 +1347,12 @@
   }
   paintCover();
   bindUi();
+  const requestedId = new URLSearchParams(location.search).get("sortie");
+  if (requestedId) {
+    const linked = data.events.find((item) => item.id === requestedId);
+    if (linked) openLinkedEvent(linked);
+    else toast("Cette sortie n’est plus à l’affiche.");
+  }
   render();
   initMap();
 })();
