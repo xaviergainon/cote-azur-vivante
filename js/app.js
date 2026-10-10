@@ -148,8 +148,14 @@
       .replace(/"/g, "&quot;");
   }
 
+  function inArea(lat, lng) {
+    return lat >= 43.4 && lat <= 44.45 && lng >= 6.5 && lng <= 7.8;
+  }
+
   function hasPoint(event) {
-    return Number.isFinite(Number(event.lat)) && Number.isFinite(Number(event.lng));
+    const lat = Number(event.lat);
+    const lng = Number(event.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) && inArea(lat, lng);
   }
 
   function dayRange(start, count) {
@@ -840,7 +846,10 @@
 
   function fitToEvents(events) {
     const pinned = events.filter(hasPoint);
-    if (!state.map || !pinned.length) return;
+    if (!state.map || !pinned.length) {
+      fitDepartment();
+      return;
+    }
     const bounds = new google.maps.LatLngBounds();
     pinned.forEach((event) => bounds.extend({ lat: Number(event.lat), lng: Number(event.lng) }));
     state.map.fitBounds(bounds, mapPadding());
@@ -1129,6 +1138,10 @@
         zoom: 9,
         minZoom: 8,
         maxZoom: 18,
+        restriction: {
+          latLngBounds: { north: 44.6, south: 43.2, west: 6.3, east: 8.0 },
+          strictBounds: true,
+        },
         disableDefaultUI: true,
         zoomControl: !window.matchMedia("(max-width: 979px)").matches,
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
