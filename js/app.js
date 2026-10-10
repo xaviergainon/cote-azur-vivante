@@ -137,7 +137,9 @@
   };
 
   function catMeta(cat) {
-    return data.categories[cat] || { label: cat, color: "#3ecfc2", icon: "•" };
+    const meta = data.categories[cat] || { label: cat, color: "#3ecfc2", icon: "•" };
+    const color = /^#[0-9a-fA-F]{3,8}$/.test(meta.color || "") ? meta.color : "#3ecfc2";
+    return { ...meta, color };
   }
 
   function escapeHtml(str) {
@@ -1245,7 +1247,11 @@
 
   if (els.sources) {
     els.sources.innerHTML = data.meta.sources
-      .map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>`)
+      .map((source) => (
+        /^https?:\/\//i.test(source.url || "")
+          ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>`
+          : escapeHtml(source.name)
+      ))
       .join(" · ");
   }
   paintCover();

@@ -21,6 +21,17 @@ async function main() {
   const app = express();
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
+  app.use((req, res, next) => {
+    res.set("X-Content-Type-Options", "nosniff");
+    res.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.set("X-Frame-Options", "DENY");
+    res.set("Content-Security-Policy", "frame-ancestors 'none'");
+    res.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+      res.set("Strict-Transport-Security", "max-age=15552000");
+    }
+    next();
+  });
   app.use(express.json({ limit: "256kb" }));
   app.use("/api", (req, res, next) => {
     res.set("Cache-Control", "no-store");

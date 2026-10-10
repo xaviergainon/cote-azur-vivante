@@ -33,6 +33,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 ## Clés
 
+- L’admin refuse d’être affiché dans une iframe. Une session est liée au mot de passe en cours : la changer déconnecte les autres sessions. L’agent ne lit pas une page dont l’adresse est interne, locale, ou une métadonnée d’hébergeur.
 - Cursor est le moteur par défaut du pilote et de tous les agents : sorties, affiches, horaires, fiches, lieux, réservations, bibliothèques et avis. Gemini reste un choix dans l’admin. Google Maps sert uniquement à la carte. La clé Cursor lance un agent cloud sans dépôt : il ne modifie pas le code et il est supprimé à la fin de la collecte. Le journal nomme le moteur au début du pilote et de chaque passage.
 - Les clés se saisissent dans l’admin et restent chiffrées. Elles ne sont pas dans Git.
 
