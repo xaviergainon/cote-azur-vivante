@@ -693,7 +693,7 @@ function reportView() {
       <div>
         <p class="eyebrow">Tableau de bord</p>
         <h2>La base, en ce moment</h2>
-        <p class="hint">${report.images.withImage} affiche(s) sur ${report.totals.active} sorties actives. ${report.images.uncheckedPages} page(s) propre(s) n’ont encore jamais été ouvertes.</p>
+        <p class="hint">${report.images.withImage} affiche(s) sur ${report.totals.active} sorties actives. ${report.images.uncheckedPages} page(s) propre(s) et ${report.images.uncheckedShared || 0} agenda(s) partagé(s) n’ont encore jamais été ouverts.</p>
       </div>
       <div class="meter" style="--p:${report.images.coverage}">
         <span>${report.images.coverage}%</span>
@@ -724,7 +724,7 @@ function reportView() {
     </section>
     <section class="panel stack" style="padding:18px">
       <h2>Affiches manquantes</h2>
-      <p class="hint">Le passage ouvre les pages une par une, brouillons et publiés, 80 au plus. Le suivant reprend là où celui-ci s’est arrêté. « Depuis le début » oublie les pages déjà tentées et recommence. ${report.images.noUrl ? `${report.images.noUrl} sortie(s) n’ont pas de lien : aucune affiche ne peut être cherchée.` : ""} ${report.images.sharedEvents ? `${report.images.sharedEvents} sortie(s) partagent une page d’agenda : leur image de site n’est pas reprise.` : ""}</p>
+      <p class="hint">Le passage ouvre 80 sorties au plus, les plus proches d’abord. Une page propre donne son affiche. Un agenda partagé mène à la page du spectacle ; sans lien propre, huit recherches au plus. Le suivant reprend la suite. « Depuis le début » oublie les pages déjà tentées. ${report.images.noUrl ? `${report.images.noUrl} sortie(s) n’ont pas de lien : aucune affiche ne peut être cherchée.` : ""} ${report.images.sharedEvents ? `${report.images.sharedEvents} sortie(s) partagent une page d’agenda.` : ""}</p>
       <p class="hint">Dernière collecte : ${lastLine}</p>
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
