@@ -634,7 +634,7 @@ function taskHint(task, missing) {
     return "Une fois par mois, hors de la collecte du jour. Le passage retient les jours d’ouverture et cherche l’affiche de chaque lieu. Les nouveaux restent en brouillon.";
   }
   if (task === "ratings") {
-    return "Une fois par mois, à part. Douze sorties au plus, les plus anciennes d’abord. Une note sur 5 n’est gardée que si au moins 8 avis parlent du bon lieu. Sinon elle est écartée.";
+    return "Une fois par mois, à part. Douze sorties à venir, hors bibliothèques. La moyenne de la salle compte, dès 3 avis, dans la bonne commune. Sinon elle est écartée.";
   }
   if (task === "duplicates") {
     return "Réunit les fiches du même titre dans la même ville, les lieux au nom proche dans la même commune, et les pages de réservation identiques. Les dates s’ajoutent, les champs vides se complètent, le doublon est retiré. Deux villes, ou deux salles vraiment différentes, restent séparées. Les bibliothèques ne sont pas touchées.";

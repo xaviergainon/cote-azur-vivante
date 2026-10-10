@@ -52,7 +52,7 @@ Choix faits pour l’agent interne, sans les redemander.
 ## Bibliothèques et avis
 
 - Les bibliothèques et médiathèques sont une rubrique à part, catégorie Bibliothèque. Le passage mensuel lit leurs pages et leurs recherches, puis retient les jours d’ouverture du mois. Il ne fait pas partie de la collecte du matin. Les nouveaux lieux restent en brouillon. L’affiche est cherchée sur la page du lieu, jamais partagée entre plusieurs adresses.
-- Les avis sont une autre compétence, lancée à part, une fois par mois, sur douze sorties au plus. Elle peut s’appuyer sur Google et sur des pages d’avis choisies dans Sources, les mêmes ou d’autres. Une note sur 5 n’est publiée que si elle vise le bon lieu et compte au moins 8 avis. Sinon elle est écartée, et une note déjà juste n’est pas effacée par un passage trop mince.
+- Les avis sont une autre compétence, lancée à part, une fois par mois, sur douze sorties à venir hors bibliothèques. Elle peut s’appuyer sur Google et sur des pages d’avis choisies dans Sources. Une note sur 5 est publiée si elle vise la bonne salle, dans la bonne commune, avec au moins 3 avis. La moyenne de la salle compte quand le spectacle n’a pas la sienne. Un homonyme ailleurs est écarté. Une note déjà juste n’est pas effacée par un passage trop mince. Sur la carte, elle s’affiche en étoiles et en note sur 5.
 - Plus tard, une note laissée dans l’application comptera avec celle du web : le web pèse au plus comme 40 avis, chaque note de l’application pèse 1. Cinq notes de lecteurs peuvent s’afficher seules. En dessous, sans note web retenue, rien n’est montré.
 
 ## Rapport et courriel

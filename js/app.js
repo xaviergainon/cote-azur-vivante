@@ -299,8 +299,11 @@
 
   function ratingHtml(event) {
     if (!event.rating) return "";
-    const score = Number(event.rating.score).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    return `<span class="rating">${score}<span>/5</span></span>`;
+    const score = Number(event.rating.score);
+    if (!Number.isFinite(score)) return "";
+    const shown = score.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const width = Math.max(0, Math.min(100, (score / 5) * 100));
+    return `<span class="rating" aria-label="${shown} sur 5"><span class="stars" aria-hidden="true"><span class="stars-base">★★★★★</span><span class="stars-fill" style="width:${width}%"><span>★★★★★</span></span></span><span class="score">${shown}</span></span>`;
   }
 
   function priceText(event) {
