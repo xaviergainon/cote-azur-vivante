@@ -236,6 +236,8 @@ a { color: var(--gold); }
 }
 
 body[data-view="cal"] .datebar,
+body[data-view="list"] .peek,
+body[data-view="cal"] .peek,
 body[data-view="list"] .map-actions,
 body[data-view="cal"] .map-actions,
 body.riding .map-actions,
@@ -412,6 +414,7 @@ body.has-peek .map-actions { bottom: calc(var(--bar) + 118px); }
   text-align: left;
 }
 
+.peek[hidden], .ride[hidden] { display: none !important; }
 .peek {
   display: flex;
   align-items: center;
@@ -541,7 +544,7 @@ body[data-view="cal"] .page { padding-top: calc(var(--safe-top) + 72px); }
   margin: 4px 0 12px;
   min-width: 0;
 }
-.page-tools p { margin: 0; flex: 1 1 120px; color: var(--mist); }
+.page-tools p { margin: 0; flex: 1 1 180px; color: var(--mist); }
 .page-tools .pill-btn { flex: 0 0 auto; }
 
 .list { display: grid; gap: 10px; }

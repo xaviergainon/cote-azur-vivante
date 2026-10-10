@@ -466,9 +466,6 @@
     if (state.city !== "all") chips.push(`<button type="button" class="kill" data-clear="city">${escapeHtml(state.city)} ×</button>`);
     if (state.freeOnly) chips.push(`<button type="button" class="kill" data-clear="free">Gratuit ×</button>`);
     if (state.query) chips.push(`<button type="button" class="kill" data-clear="query">« ${escapeHtml(state.query)} » ×</button>`);
-    if (state.intent && state.intent !== "all") {
-      chips.push(`<button type="button" class="kill" data-clear="intent">${escapeHtml(catMeta(state.intent).label)} ×</button>`);
-    }
     els.activeFilters.innerHTML = chips.join("");
     const n = filterCount();
     els.filterBadge.hidden = n === 0;
