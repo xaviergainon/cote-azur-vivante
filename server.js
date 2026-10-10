@@ -60,6 +60,14 @@ async function main() {
     res.sendFile(path.join(ROOT, "index.html"));
   });
 
+  app.get("/mentions-legales", (req, res) => {
+    res.sendFile(path.join(ROOT, "legal", "mentions.html"));
+  });
+
+  app.get("/donnees", (req, res) => {
+    res.sendFile(path.join(ROOT, "legal", "donnees.html"));
+  });
+
   app.use("/css", express.static(path.join(ROOT, "css"), { maxAge: "5m" }));
   app.use("/js", express.static(path.join(ROOT, "js"), { maxAge: "5m" }));
 
