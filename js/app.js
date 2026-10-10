@@ -768,7 +768,7 @@
       const items = events.filter((event) => nextDayInView(event) === day);
       if (!items.length) return;
       const heading = day === today ? `Aujourd’hui · ${dayParts(day).long}` : dayParts(day).long;
-      blocks.push(`<h3 class="day-head">${escapeHtml(heading)}</h3>${items.map(cardHtml).join("")}`);
+      blocks.push(`<h3 class="day-head">${escapeHtml(heading)}</h3>${items.map((event) => cardHtml(event)).join("")}`);
     });
     target.innerHTML = blocks.length
       ? blocks.join("")
