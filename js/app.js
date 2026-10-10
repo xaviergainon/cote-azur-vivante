@@ -510,7 +510,7 @@
     bar.id = "adsConsent";
     bar.className = "ads-consent";
     bar.hidden = true;
-    bar.innerHTML = `<p>Des publicités peuvent apparaître dans la liste. Aucun script n’est chargé avant ton choix.</p>
+    bar.innerHTML = `<p>Cette pub paie le développement de l’application.</p>
       <div class="ads-actions">
         <button type="button" data-ads="no">Refuser</button>
         <button type="button" data-ads="yes">Accepter</button>
