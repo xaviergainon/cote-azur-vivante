@@ -14,7 +14,7 @@ Choix faits pour l’agent interne, sans les redemander.
 
 ## Ce que l’agent lit
 
-- D’abord les recherches Google configurées (trois par défaut, cinq au maximum), via Gemini avec l’outil de recherche Google.
+- D’abord les recherches Google configurées (cinq par défaut, cinq au maximum), via Gemini avec l’outil de recherche Google. Deux d’entre elles visent les rencontres en librairie (dédicace, présentation d’auteur) et les sorties à portée écologique. Une rencontre en librairie est une sortie « Livre », pas une bibliothèque. Une sortie dont le sujet est l’écologie, le climat ou la nature est « Écologie ».
 - Ensuite les pages d’agenda activées dans Sources, douze au maximum.
 - Jusqu’à quatre pages citées par la recherche sont ouvertes en plus, si elles sont publiques. Les adresses privées sont refusées.
 

@@ -12,6 +12,8 @@ const CATEGORIES = [
   ["soiree", "Soirée"],
   ["gastronomie", "Gastronomie"],
   ["lecture", "Bibliothèque"],
+  ["livre", "Livre"],
+  ["ecologie", "Écologie"],
 ];
 
 const state = {

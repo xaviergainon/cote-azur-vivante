@@ -714,7 +714,9 @@
     conference: "expo",
     famille: "famille",
     lecture: "lecture",
+    livre: "lecture",
     gastronomie: "table",
+    ecologie: "air",
     festival: "air",
     sport: "air",
   };
