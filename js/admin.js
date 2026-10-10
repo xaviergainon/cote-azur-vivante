@@ -777,7 +777,7 @@ function eventsView() {
           ${event.image ? `<img class="thumb" src="${esc(event.image)}" alt="" referrerpolicy="no-referrer">` : ""}
           <div>
             <strong>${esc(event.title)}</strong>
-            <div class="meta">${esc(event.city)} · ${esc(daysLabel(event.days))} · ${esc(event.time || "horaire à préciser")} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+            <div class="meta">${esc([event.city, daysLabel(event.days), event.time, stamp.label].filter(Boolean).join(" · "))}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
             <div class="meta">${esc(placeMeta(event))}</div>
           </div>
         </div>

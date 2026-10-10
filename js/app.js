@@ -309,11 +309,6 @@
     return `<span class="price${event.free ? " free" : ""}">${escapeHtml(price)}</span>`;
   }
 
-  function timeLabel(event) {
-    const time = String(event.time || "").trim();
-    return time || "Horaire à préciser";
-  }
-
   function bookingUrl(event) {
     const url = String(event.booking?.url || "");
     return /^https:\/\//i.test(url) ? url : "";
@@ -359,7 +354,7 @@
         <div class="card-top"><span class="badge">${escapeHtml(meta.label)}</span></div>
         <h3>${escapeHtml(event.title)}</h3>
         <p class="meta">${escapeHtml(event.venue)} · ${escapeHtml(event.city)}</p>
-        <p class="when${time ? "" : " missing"}">${escapeHtml(timeLabel(event))}</p>
+        ${time ? `<p class="when">${escapeHtml(time)}</p>` : ""}
       </button>
       <div class="row">
         ${ratingHtml(event)}
@@ -655,7 +650,7 @@
     els.rideBody.innerHTML = `
       ${shotHtml(event)}
       <p class="ride-kicker" style="color:${meta.color}">${escapeHtml(meta.label)}</p>
-      <p class="when${time ? "" : " missing"}">${escapeHtml(timeLabel(event))}</p>
+      ${time ? `<p class="when">${escapeHtml(time)}</p>` : ""}
       ${event.rating ? `<p class="rating-line">${ratingHtml(event)} · ${escapeHtml(event.rating.source || "")}</p>` : ""}
       <h3>${escapeHtml(event.title)}</h3>
       <p class="where">${escapeHtml(event.venue)}${event.city ? ` · ${escapeHtml(event.city)}` : ""}</p>
