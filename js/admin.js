@@ -344,7 +344,7 @@ function agentView() {
       <div class="row">
         <button class="primary" type="button" id="startRun" ${state.busy ? "disabled" : ""}>${state.busy ? "Collecte en cours…" : taskButton(task)}</button>
       </div>
-      <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour` : "Aucune collecte."}</p>
+      <p class="hint">${run ? `${esc(kind)} · ${esc(run.status)} · ${/doublon\(s\) retiré/.test(run.log || "") ? `${run.updated_count || 0} fiche(s) · ${run.created_count || 0} doublon(s) retiré(s)` : `${run.created_count || 0} nouveau(x) · ${run.updated_count || 0} mis à jour`}` : "Aucune collecte."}</p>
       <pre class="log">${esc(run?.log || "")}</pre>
     </section>`;
 }
