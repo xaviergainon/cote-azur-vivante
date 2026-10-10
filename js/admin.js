@@ -21,6 +21,7 @@ const state = {
   sources: [],
   events: [],
   filter: "draft",
+  query: "",
   eventPage: 0,
   runs: [],
   schedule: null,
@@ -79,16 +80,18 @@ async function refreshSources() {
 }
 
 async function refreshEvents() {
-  const query = state.filter === "images"
-    ? "?image=proposed"
-    : state.filter === "noimage"
-      ? "?image=missing"
-    : state.filter === "missing"
-      ? "?flag=missing"
-      : state.filter === "all"
-        ? ""
-        : `?status=${state.filter}`;
-  state.events = (await api(`/api/admin/events${query}`)).events;
+  const params = new URLSearchParams();
+  if (state.filter === "images") params.set("image", "proposed");
+  else if (state.filter === "noimage") params.set("image", "missing");
+  else if (state.filter === "missing") params.set("flag", "missing");
+  else if (state.filter === "no-address") params.set("place", "no-address");
+  else if (state.filter === "shared") params.set("place", "shared");
+  else if (state.filter === "no-point") params.set("place", "no-point");
+  else if (state.filter !== "all") params.set("status", state.filter);
+  const term = (state.query || "").trim();
+  if (term) params.set("q", term);
+  const suffix = params.toString() ? `?${params}` : "";
+  state.events = (await api(`/api/admin/events${suffix}`)).events;
 }
 
 async function refreshReport() {
@@ -421,6 +424,8 @@ function eventForm() {
         ${field("price", "Prix", event.price)}
         ${field("source", "Source", event.source)}
       </div>
+      ${placeNote(event)}
+      ${field("address", "Adresse", event.address)}
       ${field("url", "Lien", event.url)}
       <label>Description<textarea name="description">${esc(event.description)}</textarea></label>
       <label class="check"><input type="checkbox" name="free" ${event.free ? "checked" : ""}> Entrée gratuite</label>
@@ -445,6 +450,30 @@ function daysLabel(days) {
   return `${list[0]} → ${list[list.length - 1]} · ${list.length} jours`;
 }
 
+function placeNote(event) {
+  const parts = [];
+  if (event.lat == null || event.lng == null) {
+    parts.push("Pas de coordonnées : cette sortie n’apparaît pas sur la carte.");
+  } else if (event.placeShare > 0) {
+    const others = event.placeShare;
+    parts.push(`Même point que ${others} autre${others > 1 ? "s" : ""} sortie${others > 1 ? "s" : ""}. L’anneau sur la carte les écarte seulement pour qu’on puisse les voir.`);
+  }
+  if (!(event.address || "").trim()) parts.push("Adresse absente.");
+  return parts.length ? `<p class="hint">${esc(parts.join(" "))}</p>` : "";
+}
+
+function placeMeta(event) {
+  const bits = [event.venue || "sans lieu"];
+  bits.push((event.address || "").trim() ? event.address : "sans adresse");
+  if (event.lat == null || event.lng == null) bits.push("sans coordonnées");
+  else if (event.placeShare > 0) bits.push(`même point ×${event.placeShare + 1}`);
+  return bits.join(" · ");
+}
+
+function filterButton(key, label) {
+  return `<button class="ghost${state.filter === key ? " active" : ""}" type="button" data-filter="${key}">${label}</button>`;
+}
+
 function eventState(event) {
   if (event.flagStatus === "missing" && event.status !== "cancelled") return { label: "à vérifier", warn: true };
   if (event.status === "published") return { label: "publié", warn: false };
@@ -467,6 +496,7 @@ function eventsView() {
           <div>
             <strong>${esc(event.title)}</strong>
             <div class="meta">${esc(event.city)} · ${esc(daysLabel(event.days))} · ${esc(stamp.label)}${event.imageStatus === "proposed" ? " · image à valider" : ""}</div>
+            <div class="meta">${esc(placeMeta(event))}</div>
           </div>
         </div>
         <span class="pill ${stamp.warn ? "warn" : ""}">${esc(stamp.label)}</span>
@@ -483,17 +513,27 @@ function eventsView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Événements</h2>
+      <form id="eventSearch" class="row">
+        <label class="event-search">Recherche
+          <input name="q" type="search" value="${esc(state.query)}" placeholder="Titre, ville, lieu ou adresse">
+        </label>
+        <button class="primary" type="submit">Chercher</button>
+      </form>
       <div class="row">
-        <button class="ghost" type="button" data-filter="draft">Brouillons</button>
-        <button class="ghost" type="button" data-filter="published">Publiés</button>
-        <button class="ghost" type="button" data-filter="missing">À vérifier</button>
-        <button class="ghost" type="button" data-filter="cancelled">Annulés</button>
-        <button class="ghost" type="button" data-filter="all">Tous</button>
-        <button class="ghost" type="button" data-filter="images">Images à valider</button>
-        <button class="ghost" type="button" data-filter="noimage">Sans affiche</button>
+        ${filterButton("draft", "Brouillons")}
+        ${filterButton("published", "Publiés")}
+        ${filterButton("missing", "À vérifier")}
+        ${filterButton("cancelled", "Annulés")}
+        ${filterButton("all", "Tous")}
+        ${filterButton("images", "Images à valider")}
+        ${filterButton("noimage", "Sans affiche")}
+        ${filterButton("shared", "Même point")}
+        ${filterButton("no-address", "Sans adresse")}
+        ${filterButton("no-point", "Sans coordonnées")}
         <button class="primary" type="button" id="publishDrafts">Publier tous les brouillons</button>
         <button class="primary" type="button" id="rescanImages" ${state.busy ? "disabled" : ""}>Chercher les affiches</button>
       </div>
+      ${state.filter === "shared" ? '<p class="hint">Ces sorties ont les mêmes coordonnées. Sur la carte, elles forment un anneau autour de ce point. Le lieu indiqué peut être différent, ou manquer.</p>' : ""}
       <p class="error">${esc(state.error)}</p>
       <p class="hint">${esc(state.message)}</p>
       <div class="events-workspace">
@@ -962,6 +1002,15 @@ function bindApp() {
     state.filter = "draft";
     state.eventPage = 0;
     await refreshEvents();
+    render();
+  });
+
+  document.getElementById("eventSearch")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    state.query = String(new FormData(event.currentTarget).get("q") || "").trim();
+    state.eventPage = 0;
+    await refreshEvents();
+    if (state.selected && !state.events.some((item) => item.id === state.selected.id)) state.selected = null;
     render();
   });
 

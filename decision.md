@@ -23,6 +23,7 @@ Choix faits pour l’agent interne, sans les redemander.
 - Les jours déjà parcourus par une collecte terminée sont relus en dernier. La consigne change : d’abord les sorties nouvelles, ensuite celles déjà en base. Si une sortie n’est plus annoncée, elle apparaît dans « À vérifier ». L’admin la note annulée ou la supprime. Rien n’est retiré tout seul.
 - Les nouveaux restent en **brouillon**. Un événement déjà publié n’est pas réécrit.
 - Rien n’est publié sans action dans l’admin.
+- Dans Événements, la recherche porte sur le titre, la ville, le lieu et l’adresse. « Même point » liste les sorties qui partagent des coordonnées : l’anneau sur la carte les écarte pour les rendre visibles, ce n’est pas leur adresse. « Sans adresse » et « Sans coordonnées » isolent les fiches incomplètes. L’adresse se corrige sur la fiche.
 
 ## Clés
 
