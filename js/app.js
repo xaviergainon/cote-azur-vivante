@@ -457,15 +457,26 @@
     return adsScript;
   }
 
+  function hideIfUnfilled(slot) {
+    const ins = slot.querySelector("ins");
+    if (ins?.getAttribute("data-ad-status") === "unfilled") slot.hidden = true;
+  }
+
   function activateAdSlot(slot) {
     if (slot.dataset.pushed === "1") return;
     slot.dataset.pushed = "1";
+    const ins = slot.querySelector("ins");
+    if (ins) {
+      const observer = new MutationObserver(() => hideIfUnfilled(slot));
+      observer.observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
+    }
     loadAdsScript().then(() => {
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       } catch {
         slot.dataset.pushed = "";
       }
+      hideIfUnfilled(slot);
     }).catch(() => {
       slot.dataset.pushed = "";
     });
