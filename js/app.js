@@ -979,8 +979,22 @@
       .sort((a, b) => {
         const rank = (event) => (preferred.has(event.category) ? 0 : 1);
         return rank(a) - rank(b) || String(a.time || "99:99").localeCompare(String(b.time || "99:99"));
-      })
-      .slice(0, 3);
+      });
+    const chosen = [];
+    const usedCities = new Set();
+    for (const event of picks) {
+      const city = event.city || "";
+      if (usedCities.has(city)) continue;
+      chosen.push(event);
+      usedCities.add(city);
+      if (chosen.length === 3) break;
+    }
+    for (const event of picks) {
+      if (chosen.length === 3) break;
+      if (!chosen.includes(event)) chosen.push(event);
+    }
+    picks.length = 0;
+    picks.push(...chosen.slice(0, 3));
     if (picks.length < 2) {
       bill.hidden = true;
       return;
