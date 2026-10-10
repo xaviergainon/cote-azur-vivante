@@ -361,7 +361,7 @@ function keysView() {
   return `
     <section class="panel stack" style="padding:18px">
       <h2>Clés API</h2>
-      <p class="hint">La collecte utilise Gemini ou Cursor. Google Maps sert à la carte publique. Une clé déjà enregistrée n’est plus affichée en clair.</p>
+      <p class="hint">Cursor est le moteur par défaut du pilote et de tous les agents. Gemini reste un choix. Google Maps sert à la carte publique. Une clé déjà enregistrée n’est plus affichée en clair.</p>
       <p>
         <span class="pill ${settings.gemini.configured ? "" : "warn"}">Gemini ${settings.gemini.configured ? settings.gemini.hint : "manquante"}</span>
         <span class="pill ${settings.cursor?.configured ? "" : "warn"}">Cursor ${settings.cursor?.configured ? settings.cursor.hint : "manquante"}</span>
@@ -627,7 +627,7 @@ function briefsForm() {
 
 function taskHint(task, missing) {
   if (task === "pilot") {
-    return "Un seul passage. Il regarde la santé des sorties et lance, dans le même journal, tous les agents encore utiles : sorties, doublons, fiches, affiches, horaires, lieux, réservations, bibliothèques, avis. Une étape déjà faite, ou sans rien à reprendre, est sautée. Rien n’est publié. Si Pilote est actif dans Planning, lui seul part tout seul.";
+    return "Un seul passage. Le pilote et chaque agent utilisent Cursor, sauf si Gemini est choisi au-dessus. Il regarde la santé des sorties et lance, dans le même journal : sorties, doublons, fiches, affiches, horaires, lieux, réservations, bibliothèques, avis. Une étape déjà faite, ou sans rien à reprendre, est sautée. Rien n’est publié. Si Pilote est actif dans Planning, lui seul part tout seul.";
   }
   if (task === "images") {
     return `${missing} sortie(s) sans affiche, brouillons et publiées. Ce passage en ouvre 80, les plus proches d’abord. Si le lien est un agenda partagé, l’affiche est prise sur la page du spectacle. S’il n’y a pas de lien propre, 24 recherches au plus, par groupes de huit. Le suivant reprend la suite.`;
